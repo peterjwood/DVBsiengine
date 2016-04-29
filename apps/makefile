@@ -37,6 +37,6 @@ parseDSMCCOC: parseDSMCCOC.o $(LIBDEPS)
 
 
 clean:
-	rm -f *.o *.d
+	rm -f *.o *.d  parser depacket extractPIDS extractDSMCC parseDSMCC decomp parseDSMCCOC
 
 -include *.d

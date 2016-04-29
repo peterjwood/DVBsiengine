@@ -1,0 +1,11 @@
+*.o
+*.d
+*.swp
+*.a
+apps/decomp
+apps/depacket
+apps/extractDSMCC
+apps/extractPIDS
+apps/parseDSMCC
+apps/parseDSMCCOC
+apps/parser
