@@ -4,59 +4,59 @@
 
 #if !defined(READER_H__INCLUDED_)
 #define READER_H__INCLUDED_
-#include <iostream>
-#include <fstream>
 
 class reader
 {
 public:
 	reader(){};
 	~reader(){};
-	virtual unsigned long Len(){return 0;};
-	virtual bool getdata(unsigned char *buffer, long len){return false;};
-	virtual bool finddata(bool fromstart, long len){return true;};
-};
-class readerio : public reader
-{
-public:
-	readerio(char *filename):is(filename,std::ifstream::binary){
-		
-		is.seekg(0,is.end);
-		len = is.tellg();
-		is.seekg(0,is.beg);
-	};
+    virtual unsigned long Len()=0;
+    virtual bool getdata(long len, unsigned char *buffer, bool inc=true)=0;
+    virtual bool finddata(bool fromstart, long len)=0;
+    virtual unsigned long CurrentPos(void)=0;
 
-	~readerio(){
-	};
+	bool getulong(unsigned long& data, bool inc = true)
+	{
+		unsigned char buff[4];
 
-	virtual unsigned long Len(){return len;};
-	virtual bool getdata(unsigned char *buffer, long len){
-		if (buffer == NULL)
-			return false;
-		is.read((char*)buffer,len);
-
-		if (is)
+		if (getdata(4, buff,inc))
+		{
+			data = (buff[0] << 24 ) + (buff[1] << 16) + (buff[2] << 8) + buff[3];
 			return true;
-
-		return false;
-	};
-	virtual bool finddata(bool fromstart, long len){
-		if (fromstart)
-			is.seekg(len, is.beg);
+		}
 		else
-			is.seekg(len,is.cur);
+			return false;
 
-		if (is)
+	};
+
+    bool getbyte(unsigned char& data, bool inc = true){return getdata(1,&data,inc);}
+
+	bool getushort(unsigned short& data, bool inc = true)
+	{
+		unsigned char buff[2];
+
+		if (getdata(2,buff,inc))
+		{
+			data = (buff[0] << 8 ) + buff[1];
 			return true;
-		return false;
-		};
+		}
+		else
+			return false;
+    }
 
-	
-private:
-	std::ifstream is;
-	int len;
+	bool get12bits(unsigned short& data, bool inc = true)
+	{
 
+		unsigned char buff[2];
+
+		if (getdata(2,buff,inc))
+		{
+			data = ( (buff[0] & 0x0F) << 8 ) + buff[1];
+			return true;
+		}
+		else
+			return false;
+
+    }
 };
-
-
 #endif

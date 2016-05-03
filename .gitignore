@@ -9,3 +9,7 @@ apps/extractPIDS
 apps/parseDSMCC
 apps/parseDSMCCOC
 apps/parser
+apps/DSMCCprocess
+apps/fifoparser
+apps/sectionFilter
+tags

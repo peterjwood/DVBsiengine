@@ -5,29 +5,65 @@
 #if !defined(_DSMCCsection_H_INCLUDED_)
 #define _DSMCCsection_H_INCLUDED_
 
-#include <vector>
 #include <string.h>
 #include "writer.h"
+#include "reader.h"
 
 class DSMCCdatasection  
 {
 public:
-	unsigned short DSMCCType(){return dsmccdata[1]; };
-	unsigned long TransID()
-		{
-			unsigned char *data = dsmccdata.data();
-			return (data[4] <<24 ) + (data[5] <<16 ) + (data[6] <<8 ) + data[7];
+	enum DSMCCMessageType {
+	DSMCC_UNConfigMessage,
+	DSMCC_UNSessionMessage,
+	DSMCC_DIRequest,
+	DSMCC_DII,
+	DSMCC_DDB,
+	DSMCC_DDRequest,
+	DSMCC_DLCancel,
+	DSMCC_DSI,
+	DSMCC_ChanChangeMessage,
+	DSMCC_UNPassMessage,
+	DSMCC_UNKnown} ;
+	
+	virtual DSMCCMessageType getMessageType(void) { return DSMCC_UNKnown;};
+
+	unsigned short DSMCCType(){
+		unsigned char acttype;
+		dsmccdata->finddata(true,1);
+		dsmccdata->getbyte(acttype);
+		dsmccdata->finddata(true,currentpos);
+		return (unsigned short)acttype;
+	 };
+	unsigned long TransID() {
+		unsigned long data;
+		dsmccdata->finddata(true,4);
+		dsmccdata->getulong(data);
+		dsmccdata->finddata(true,currentpos);
+		return data;
 		};
 	unsigned short MessID()
 		{
-			unsigned char *data = dsmccdata.data();
-			return (data[2] <<8 ) + data[3];
+		unsigned short data; 
+		dsmccdata->finddata(true,2);
+		dsmccdata->getushort(data);
+		dsmccdata->finddata(true,currentpos);
+		return data;
 		};
-	unsigned char headerAdaptLen(){return dsmccdata[9]; };
+	unsigned char headerAdaptLen()
+	{
+		unsigned char data;
+		dsmccdata->finddata(true,9);
+		dsmccdata->getbyte(data);
+		dsmccdata->finddata(true,currentpos);
+		return data; 
+	};
 	unsigned short messageLen()
 		{
-			unsigned char *data = dsmccdata.data();
-			return (data[10] << 8) + data[11];
+		unsigned short data; 
+		dsmccdata->finddata(true,10);
+		dsmccdata->getushort(data);
+		dsmccdata->finddata(true,currentpos);
+		return data;
 		};
 	virtual unsigned short DSMCCHeaderLen(){return headerAdaptLen() + 12;};
 
@@ -36,22 +72,25 @@ public:
 	virtual bool Write(writer *level);
 	virtual bool Write(char *name, char *ext=NULL);
 
-	DSMCCdatasection(unsigned char *sect, int len);
+	DSMCCdatasection(reader *r);
 
 	virtual ~DSMCCdatasection(){};
 
-	static DSMCCdatasection *Allocate(unsigned char *data, int len);
+	static DSMCCdatasection *Allocate(reader *r);
 
 	virtual bool operator==(DSMCCdatasection *comp)
 	{
-		unsigned char *data = comp->Payload();
+		unsigned char data[8];
+		comp->finddata(true,0);
+		comp->getdata(8,data);
+
 		if ((DSMCCType() == data[1]) &&
 			(MessID() == (data[2] <<8 ) + data[3]) &&
 			(TransID() == (data[4] <<24 ) + (data[5] <<16 ) + (data[6] <<8 ) + data[7]))
 			return true;
 
 		return false;
-	};
+    }
 
 	bool getdata(unsigned long length, unsigned char *buffer, bool inc = false);
 	unsigned char *getrawdata(unsigned long length, bool inc=false);
@@ -67,220 +106,231 @@ public:
 
 	void writeblock( component_ids ID, unsigned long len, writer* level);
 
-	unsigned char *Payload(){return dsmccdata.data();};
-	unsigned int Len(){return dsmccdata.size();};
+    unsigned int Len(){return DSMCCdatasection::messageLen()+DSMCCdatasection::DSMCCHeaderLen();}
 protected:
 	unsigned int currentpos;
-	std::vector<unsigned char> dsmccdata;
+	reader *dsmccdata;
 };
 
-class UNConfigMessage : public DSMCCdatasection
+class UNConfigMessageSect : public DSMCCdatasection
 {
 public:
-	UNConfigMessage(unsigned char *data, int len):DSMCCdatasection(data,len){};
-	virtual ~UNConfigMessage(){};
+    virtual DSMCCMessageType getMessageType(void) { return DSMCC_UNConfigMessage;}
+        UNConfigMessageSect(reader *r):DSMCCdatasection(r){}
+        virtual ~UNConfigMessageSect(){}
 	bool Write(writer *level);	
-	bool Write(char *name, char *ext=NULL)
+    bool Write(char *name)
 	{
 		if (name == NULL)
 			return false;
 
-		return DSMCCdatasection::Write(name,"/UNConfigMessage");
+        return DSMCCdatasection::Write(name,(char*)"/UNConfigMessage");
 	};
 };
 
-class UNSessionMessage : public DSMCCdatasection
+class UNSessionMessageSect : public DSMCCdatasection
 {
 public:
-	UNSessionMessage(unsigned char *data, int len):DSMCCdatasection(data,len){};
-	virtual ~UNSessionMessage(){};
+	virtual DSMCCMessageType getMessageType(void) { return DSMCC_UNSessionMessage;};
+        UNSessionMessageSect(reader *r):DSMCCdatasection(r){};
+        virtual ~UNSessionMessageSect(){};
 	bool Write(writer *level);	
-	bool Write(char *name, char *ext=NULL)
+    bool Write(char *name)
 	{
 		if (name == NULL)
 			return false;
 
-		return DSMCCdatasection::Write(name,"/UNSessionMessage");
+		return DSMCCdatasection::Write(name,(char*)"/UNSessionMessage");
 	};
 };
 
-class DownloadMessage : public DSMCCdatasection
+class DownloadMessageSect : public DSMCCdatasection
 {
 public:
 	virtual bool CompSubDesc(writer *level);
 	virtual void compatibilitydesc(writer *level);
 	virtual bool WritePrivData(int len, writer *level);
 
-	DownloadMessage(unsigned char *data, int len):DSMCCdatasection(data,len){};
-	virtual ~DownloadMessage(){};
-	bool Write(char *name, char *ext=NULL)
-	{
-		if (name == NULL)
-			return false;
-
-		return DSMCCdatasection::Write(name,"/DownloadMessage");
-	};
+        DownloadMessageSect(reader *r):DSMCCdatasection(r){};
+        virtual ~DownloadMessageSect(){};
 };
 
-class DIRequest : public DownloadMessage
+class DIRequestSect : public DownloadMessageSect
 {
 public:
-	DIRequest(unsigned char *data, int len):DownloadMessage(data,len){};
-	virtual ~DIRequest(){};
+	virtual DSMCCMessageType getMessageType(void) { return DSMCC_DIRequest;};
+        DIRequestSect(reader *r):DownloadMessageSect(r){};
+        virtual ~DIRequestSect(){};
 
 	virtual bool Write(writer *level);	
-	bool Write(char *name, char *ext=NULL)
+    bool Write(char *name)
 	{
 		if (name == NULL)
 			return false;
 
-		return DSMCCdatasection::Write(name,"/DIRequest");
+		return DSMCCdatasection::Write(name,(char*)"/DIRequest");
 	};
 };
 
-class DII : public DownloadMessage
+class DIISect : public DownloadMessageSect
 {
 public:
+	virtual DSMCCMessageType getMessageType(void) { return DSMCC_DII;};
 	virtual bool WriteModInfo(int len, writer *level);
 
-	DII(unsigned char *data, int len):DownloadMessage(data,len){};
-	virtual ~DII(){};
+        DIISect(reader *r):DownloadMessageSect(r){};
+        virtual ~DIISect(){};
 
 	virtual bool Write(writer *level);	
-	bool Write(char *name, char *ext=NULL)
+    bool Write(char *name)
 	{
 		if (name == NULL)
 			return false;
 
-		return DSMCCdatasection::Write(name,"/DII");
+		return DSMCCdatasection::Write(name,(char*)"/DII");
 	};
 };
 
-class DDB : public DownloadMessage
+class DDBSect : public DownloadMessageSect
 {
 public:
+	virtual DSMCCMessageType getMessageType(void) { return DSMCC_DDB;};
 	unsigned short ModuleID()
 		{
-			unsigned char *data = dsmccdata.data();
-			int pos =12+data[9];
+		unsigned short data; 
+		dsmccdata->finddata(true,DSMCCdatasection::DSMCCHeaderLen());
+		dsmccdata->getushort(data);
+		dsmccdata->finddata(true,currentpos);
 			
-			return (data[pos]<<8) + data[pos+1];
+		return data;
 		};
 
 	unsigned char DDBVersion(){
-			int pos =12+dsmccdata[9]+2;
-			return dsmccdata[pos];
+		unsigned short data; 
+		dsmccdata->finddata(true,DSMCCdatasection::DSMCCHeaderLen()+2);
+		dsmccdata->getushort(data);
+		dsmccdata->finddata(true,currentpos);
+			
+		return data;
 	};
 		
 	unsigned int maxBlock;
 
-	DDB(unsigned char *data, int len):DownloadMessage(data,len){
+        DDBSect(reader *r):DownloadMessageSect(r){
 		maxBlock = 65535;
 	};
 
 	unsigned short BlockNum()
 	{
-		unsigned char *data = dsmccdata.data();
-		int pos =12+data[9] +4;
-		return (data[pos] << 8) + data[pos+1];
+		unsigned short data; 
+		dsmccdata->finddata(true,DSMCCdatasection::DSMCCHeaderLen()+4);
+		dsmccdata->getushort(data);
+		dsmccdata->finddata(true,currentpos);
+			
+		return data;
 	};
 
-	virtual unsigned short DSMCCHeaderLen(){return headerAdaptLen() + 12 + 6;};
-	virtual ~DDB(){};
+	virtual unsigned short DSMCCHeaderLen(){return DSMCCdatasection::DSMCCHeaderLen() + 6;};
+        virtual ~DDBSect(){};
 
 	virtual bool Write(writer *level);
 	void SetMaxSection(unsigned short value)
 	{
 		maxBlock = value;
 	};
-	bool Write(char *name, char *ext=NULL)
+    bool Write(char *name)
 	{
 		char localext[256];
 
 		if (name == NULL)
 			return false;
 
-		sprintf(localext,"/DDB.M%x.V%x.B%.8x", ModuleID(),DDBVersion(),BlockNum());
+        sprintf(localext,"/DDB.M%x.V%x.B%x", ModuleID(),DDBVersion(),BlockNum());
 		return DSMCCdatasection::Write(name,localext);
 	};
 };
 
-class DDRequest : public DownloadMessage
+class DDRequestSect : public DownloadMessageSect
 {
 public:
-	DDRequest(unsigned char *data, int len):DownloadMessage(data,len){};
-	virtual ~DDRequest(){};
+	virtual DSMCCMessageType getMessageType(void) { return DSMCC_DDRequest;};
+        DDRequestSect(reader *r):DownloadMessageSect(r){};
+        virtual ~DDRequestSect(){};
 
 	virtual bool Write(writer *level);	
-	bool Write(char *name, char *ext=NULL)
+    bool Write(char *name)
 	{
 		if (name == NULL)
 			return false;
 
-		return DSMCCdatasection::Write(name,"/DDRequest");
+		return DSMCCdatasection::Write(name,(char*)"/DDRequest");
 	};
 };
 
-class DLCancel : public DownloadMessage
+class DLCancelSect : public DownloadMessageSect
 {
 public:
-	DLCancel(unsigned char *data, int len):DownloadMessage(data,len){};
-	virtual ~DLCancel(){};
+	virtual DSMCCMessageType getMessageType(void) { return DSMCC_DLCancel;};
+        DLCancelSect(reader *r):DownloadMessageSect(r){};
+        virtual ~DLCancelSect(){};
 
 	virtual bool Write(writer *level);	
-	bool Write(char *name, char *ext=NULL)
+    bool Write(char *name)
 	{
 		if (name == NULL)
 			return false;
 
-		return DSMCCdatasection::Write(name,"/DLCancel");
+		return DSMCCdatasection::Write(name,(char*)"/DLCancel");
 	};
 };
 
-class DSI : public DownloadMessage
+class DSISect : public DownloadMessageSect
 {
 public:
-	DSI(unsigned char *data, int len):DownloadMessage(data,len){};
-	virtual ~DSI(){};
+	virtual DSMCCMessageType getMessageType(void) { return DSMCC_DSI;};
+        DSISect(reader *r):DownloadMessageSect(r){};
+        virtual ~DSISect(){};
 
 	virtual bool Write(writer *level);	
-	bool Write(char *name, char *ext=NULL)
+    bool Write(char *name)
 	{
 		if (name == NULL)
 			return false;
 
-		return DSMCCdatasection::Write(name,"/DSI");
+		return DSMCCdatasection::Write(name,(char*)"/DSI");
 	};
 };
 
-class ChanChangeMessage : public DSMCCdatasection
+class ChanChangeMessageSect : public DSMCCdatasection
 {
 public:
-	ChanChangeMessage(unsigned char *data, int len):DSMCCdatasection(data,len){};
-	virtual ~ChanChangeMessage(){};
+	virtual DSMCCMessageType getMessageType(void) { return DSMCC_ChanChangeMessage;};
+        ChanChangeMessageSect(reader *r):DSMCCdatasection(r){};
+        virtual ~ChanChangeMessageSect(){};
 	bool Write(writer *level);	
-	bool Write(char *name, char *ext=NULL)
+    bool Write(char *name)
 	{
 		if (name == NULL)
 			return false;
 
-		return DSMCCdatasection::Write(name,"/ChanChangeMessage");
+		return DSMCCdatasection::Write(name,(char*)"/ChanChangeMessage");
 	};
 };
 
 
-class UNPassMessage : public DSMCCdatasection
+class UNPassMessageSect : public DSMCCdatasection
 {
 public:
-	UNPassMessage(unsigned char *data, int len):DSMCCdatasection(data, len){};
-	virtual ~UNPassMessage(){};
+	virtual DSMCCMessageType getMessageType(void) { return DSMCC_UNPassMessage;};
+        UNPassMessageSect(reader *r):DSMCCdatasection(r){};
+        virtual ~UNPassMessageSect(){};
 	bool Write(writer *level);	
-	bool Write(char *name, char *ext=NULL)
+    bool Write(char *name)
 	{
 		if (name == NULL)
 			return false;
 
-		return DSMCCdatasection::Write(name,"/UNPassMessage");
+		return DSMCCdatasection::Write(name,(char*)"/UNPassMessage");
 	};
 };
 

@@ -69,7 +69,7 @@ public:
 	};
 	bool IsPrivate(void){
 		// top bit indicates the table is private
-		return (sectiondata[1] & 0x80 == 0);
+        return ((sectiondata[1] & 0x80) == 0);
 	};
 	virtual int complete();
 	virtual bool WriteGeneric(writer* parent);

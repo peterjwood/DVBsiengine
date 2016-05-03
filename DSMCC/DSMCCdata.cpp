@@ -36,7 +36,7 @@ bool DownloadMessage::WritePrivData(int len, writer *level)
 bool DIRequest::Write(writer *level)
 {
 	writer *level2;
-	unsigned short len,i;
+    unsigned short len;
 	unsigned long ulong_data;
 	unsigned short ushort_data;
 
@@ -76,13 +76,14 @@ bool DII::WriteModInfo(int len, writer *level)
 bool DII::Write(writer *level)
 {
 	writer *level2,*level3;
-	unsigned short len,i;
+    unsigned short i;
 	unsigned long ulong_data;
 	unsigned short ushort_data;
 	unsigned char uchar_data;
 	unsigned short numModules;
 
-	finddata(true,0);
+    if (!finddata(true,0))
+        return false;
 
 	level2 = level->write(IDS_DII);
 
@@ -153,13 +154,10 @@ bool DII::Write(writer *level)
 
 bool DataModule::Write(writer *level)
 {
-	writer *level2,*level3;
-	unsigned short len,i;
-	unsigned long ulong_data;
-	unsigned short ushort_data;
-	unsigned char uchar_data;
+    writer *level2;
 
-	finddata(true,0);
+    if (!finddata(true,0))
+        return false;
 
 	level2 = level->write(IDS_DDB);
 
@@ -171,7 +169,6 @@ bool DataModule::Write(writer *level)
 bool DDRequest::Write(writer *level)
 {
 	writer *level2;
-	unsigned long ulong_data;
 	unsigned short ushort_data;
 	unsigned char uchar_data;
 
@@ -193,8 +190,7 @@ bool DDRequest::Write(writer *level)
 }
 bool DLCancel::Write(writer *level)
 {
-	writer *level2,*level3;
-	unsigned short len,i;
+    writer *level2;
 	unsigned long ulong_data;
 	unsigned short ushort_data;
 	unsigned char uchar_data;
@@ -235,9 +231,9 @@ bool DSI::Write(writer *level)
 {
 	writer *level2;
 	unsigned short pdlen;
-	unsigned char *checkdata;
 
-	finddata(true,0);
+    if (!finddata(true,0))
+        return false;
 
 	level2 = level->write(IDS_DSI);
 
@@ -287,10 +283,10 @@ bool DownloadMessage::CompSubDesc(writer *level)
 void DownloadMessage::compatibilitydesc(writer *level)
 {
 
-	writer *level2,*level3, *level4;
+    writer *level2,*level3;
 	unsigned short count, len;
 	unsigned char subcount;
-	unsigned char uchar_data,tempchar,tempchar1;
+    unsigned char uchar_data;
 	unsigned short ushort_data;
 
 	if(!getushort(len))
@@ -349,5 +345,6 @@ void DownloadMessage::compatibilitydesc(writer *level)
 
 bool DSMCCdata::Write(writer *level)
 {
+    level->write((char*)"Unknown Table");
 	return true;
 }

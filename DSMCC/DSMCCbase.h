@@ -14,19 +14,19 @@ public:
 	};
 	~DSMCCbase(){};
 
-	virtual bool getdata(long length, unsigned char *buffer, bool inc = false);
+	bool getdata(long length, unsigned char *buffer, bool inc = false){return dsmccreader->getdata(length,buffer,inc);};
 
-	virtual bool finddata(bool fromstart, long len);
+	bool finddata(bool fromstart, long len){return dsmccreader->finddata(fromstart,len);};
 
-	virtual bool getulong(unsigned long& data, bool inc = true);
+	bool getulong(unsigned long& data, bool inc = true){return dsmccreader->getulong(data,inc);};
 
-	virtual bool getbyte(unsigned char& data, bool inc = true);
+	bool getbyte(unsigned char& data, bool inc = true){return dsmccreader->getbyte(data,inc);};
 
-	virtual bool getushort(unsigned short& data, bool inc = true);
+	bool getushort(unsigned short& data, bool inc = true){return dsmccreader->getushort(data,inc);};
 
-	virtual bool get12bits(unsigned short& data, bool inc = true);
+	bool get12bits(unsigned short& data, bool inc = true){return dsmccreader->get12bits(data,inc);};
 
-	virtual void writeblock( component_ids ID, unsigned long len, writer* level);
+	bool writeblock( component_ids ID, unsigned long len, writer* level);
 
 	unsigned int Len(){return dsmccreader->Len();};
 	virtual bool Write(writer *level)=0;

@@ -181,7 +181,6 @@ bool RawSection::finddata(bool fromstart, long len)
 
 void RawSection::writeblock(component_ids ID, unsigned long len, writer* level)
 {
-	long count = len;
 
 	if (len > SectionPayloadLength() + 1 -currentpos)
 		return;

@@ -161,21 +161,20 @@ bool dostats = false;
 float BitRate = 27000000.0;
 int gettingpids = 0;
 bool TableSet = false;
-bool printallsects= false;
 
 bool multistartpacket=false;
 
 int main (int argc, char *argv[] )
 {
 	int option;
-	bool packetdecode = true;
+	bool packetdecode = false;
 
 	memset(activePIDS,0,sizeof(activePIDS));
 	memset(activeTables,0,sizeof(activeTables));
 	filename[0] = 0;
 	outfilename[0] = 0;
 
-	while ((option = getopt(argc,argv,"f:p:xPt:b:o:msT:ASF")) != -1)
+	while ((option = getopt(argc,argv,"f:p:xPt:b:o:msT:A")) != -1)
 	{
 		switch (option)
 		{
@@ -191,6 +190,7 @@ int main (int argc, char *argv[] )
 			printf("All pids selected\n");
 			for (int i=0; i<8192; i++)
 				activePIDS[i] = true;
+			packetdecode=true;
 		}
 		break;
 		case 'p':
@@ -200,6 +200,7 @@ int main (int argc, char *argv[] )
 			printf ("arg was %s\n",optarg);
 			if (pid < 8192)
 			{
+				packetdecode=true;
 				activePIDS[pid] = true;
 			}
 			else
@@ -255,12 +256,6 @@ int main (int argc, char *argv[] )
 			strncpy(outfilename,optarg,1024);
 			printf("Output Filename = %s\n",outfilename);
 		break;
-		case 'S':
-			packetdecode=false;
-		break;
-		case 'F':
-			printallsects=true;
-		break;
 		case 's':
 			dostats = true;
 			printf("Stats\n"); 
@@ -301,16 +296,6 @@ int ProcessSection(RawSection *Sect,writer *level)
 	{
 		if ( Sect->complete() == 1)
 		{
-                        if (printallsects)
-                        {
-                            RawSection *tmpsect = SISection::Allocate(Sect);
-                            if ((tmpsect != NULL) && (level != NULL))
-                            {
-                                tmpsect->Write(level);
-                                delete tmpsect;
-                            }
-                            return -1;
-                        }
 			if (TList != NULL)
 			{
 				TMPTable = TList->Find(Sect);
@@ -392,7 +377,9 @@ int PacketLoadingTask()
 	printf("Packetised file decode selected\n");
 	
 	// initialise the local structures
-	f = open(filename,O_RDONLY|O_LARGEFILE);
+
+	mkfifo(filename,0666);
+	f = open(filename,O_RDONLY);
 
 	if (f == -1)
 		return -1;
@@ -404,9 +391,9 @@ int PacketLoadingTask()
 			w.setoutput(outfile);
 	}
 
-	amountread = read(f,basebuffer,512);
+	//amountread = read(f,basebuffer,512);
 
-	basepacketsize = getpacketsize(basebuffer,&basestartpos);
+	basepacketsize = 188;//getpacketsize(basebuffer,&basestartpos);
 
 	if (basepacketsize == 0xFFFF)
 	{
@@ -414,6 +401,7 @@ int PacketLoadingTask()
 		if (outfile) fclose(outfile);
 		return -2;
 	}
+
 
 	level1 = w.write("Tables");
 	
@@ -428,9 +416,7 @@ int PacketLoadingTask()
 		count[i] = 0L;
 	}
 
-	lseek(f,basestartpos,0);
-
-	while (((amountread = read(f,basebuffer,(PACKETBUFFERSIZE/basepacketsize)*basepacketsize))>basepacketsize))
+	while (amountread = read(f,basebuffer,basepacketsize))
 	{
 		packet p; // define here so that it gets reset when we read from the file
 		while(bufferpos <= amountread-basepacketsize)
@@ -442,22 +428,14 @@ int PacketLoadingTask()
 			}
 			bufferpos += basepacketsize;
 
-			if (dostats)
-			{
-				count[p.pid()]++;
+			count[p.pid()]++;
 
-				PidsUsed[p.pid()] = true;
-			}
+			PidsUsed[p.pid()] = true;
 
-			if (!activePIDS[p.pid()] )
-				continue;
-
-			if ((p.cont == cont[p.pid()])  || !p.datacontent())
+			if (!activePIDS[p.pid()] || (p.cont == cont[p.pid()])  || !p.datacontent())
 			{
 				continue;
 			}
-if ((cont[p.pid()] != 0xFF) && (((cont[p.pid()] + 1) % 0x10) != p.cont))
-printf("Continuity is skipped\n");
 
 			cont[p.pid()] = p.cont;
 
@@ -489,12 +467,12 @@ printf("Continuity is skipped\n");
 						int processval;
 						if ((processval = ProcessSection(Sect[p.pid()],gettingpids?NULL:level1)) == 1)
 						{
-							//goto exitpoint;
+							goto exitpoint;
 							//lseek(f,basestartpos,0);
-							//amountread = basepacketsize;
-							//delete Sect[p.pid()];
-							//Sect[p.pid()] = NULL;
-							//break;
+							amountread = basepacketsize;
+							delete Sect[p.pid()];
+							Sect[p.pid()] = NULL;
+							break;
 						}
 						delete Sect[p.pid()];
 						Sect[p.pid()] = NULL;
@@ -556,7 +534,7 @@ exitpoint:
 	}
 
 	close(f);
-
+	unlink(filename);
 	if (outfile)
 		fclose(outfile);
 

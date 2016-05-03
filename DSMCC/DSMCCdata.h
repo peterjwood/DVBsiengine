@@ -39,7 +39,6 @@ public:
 	virtual bool CompSubDesc(writer *level);
 	virtual void compatibilitydesc(writer *level);
 	virtual bool WritePrivData(int len, writer *level);
-	virtual bool Write(writer *level);	
 
 	DownloadMessage(reader *r):DSMCCdata(r){};
 	virtual ~DownloadMessage(){};

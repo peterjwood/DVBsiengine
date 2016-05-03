@@ -11,21 +11,19 @@
 class writer  
 {
 public:
-	virtual bool init(void) {
-		return true;
-	};
+    virtual bool init(void) =0;
 	writer()
 	{
 	};
 	virtual ~writer(){};
 
-	virtual writer *ProcessData(char* message){return this;};
+    virtual writer *ProcessData(char* message)=0;
 
-	virtual writer *write(char *message){return this;};
-	virtual writer *write(component_ids id,unsigned int val){return this;};
-	virtual writer *write(component_ids id){return this;};
-	virtual writer *bindata(component_ids id,unsigned char *data, unsigned int len){return this;};
-	virtual writer *chardata(component_ids id,char *data, unsigned int len){return this;};
+    virtual writer *write(char *message)=0;
+    virtual writer *write(component_ids id,unsigned int val)=0;
+    virtual writer *write(component_ids id)=0;
+    virtual writer *bindata(component_ids id,unsigned char *data, unsigned int len)=0;
+    virtual writer *chardata(component_ids id,char *data, unsigned int len)=0;
 
 };
 

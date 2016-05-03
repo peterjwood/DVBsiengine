@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>
+#include "bufreader.h"
 #include "filewriter.h"
 #include "DSMCCsection.h"
 #include <sys/types.h>
@@ -46,7 +47,7 @@ int main (int argc, char *argv[] )
 	return 1;
 }
 
-#define PACKETBUFFERSIZE 1024*1024
+#define PACKETBUFFERSIZE 4096
 unsigned char basebuffer[PACKETBUFFERSIZE];
 
 int SectionLoadingTask()
@@ -68,14 +69,6 @@ int SectionLoadingTask()
 	if (f == -1)
 		return -1;
 
-#if 0
-	if (outfilename[0] != 0)
-	{
-		outfile = fopen(outfilename,"w");
-		if (outfile)
-			w.setoutput(outfile);
-	}
-#endif
 	basepacketsize = 4096;
 
 
@@ -85,9 +78,10 @@ int SectionLoadingTask()
 	{
 		amountread += bufferpos;
 		bufferpos = 0;
-		while(bufferpos <= amountread)
+		while(bufferpos <= amountread-basepacketsize)
 		{
-			Current = DSMCCdatasection::Allocate(&basebuffer[bufferpos],amountread - bufferpos);
+			bufreader r(&basebuffer[bufferpos],amountread - bufferpos);
+			Current = DSMCCdatasection::Allocate(&r);
 			if (Current == NULL)
 				break;
 
@@ -99,10 +93,7 @@ int SectionLoadingTask()
 
 			bufferpos += Current->Len();
 
-			if (outfilename[0] == 0)
-				Current->Write(&w);
-			else
-				Current->Write(outfilename);
+			Current->Write(outfilename);
 
 			delete Current;
 		}

@@ -6,6 +6,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
+#include <signal.h>
 #include "generaltools.h"
 #include "pthread.h"
 
@@ -14,9 +15,11 @@ int PacketLoadingTask();
 char filename[1024];
 char fullfilename[1024];
 char outfilename[1024];
+char commandfilename[1024];
 int activePID = -1;
 
 int outfile=-1;
+int commandpipe=-1;
 
 int main (int argc, char *argv[] )
 {
@@ -24,8 +27,9 @@ int main (int argc, char *argv[] )
 
 	filename[0] = 0;
 	outfilename[0] = 0;
+	commandfilename[0] = 0;
 
-	while ((option = getopt(argc,argv,"f:p:o:")) != -1)
+	while ((option = getopt(argc,argv,"f:p:o:c:")) != -1)
 	{
 		switch (option)
 		{
@@ -49,13 +53,18 @@ int main (int argc, char *argv[] )
 			strncpy(outfilename,optarg,1024);
 			printf("Output Filename = %s\n",outfilename);
 		break;
+		case 'c':
+			strncpy(commandfilename,optarg,1024);
+			printf("Command Filename = %s\n",commandfilename);
+		break;
+
 		default:
 			fprintf(stderr,"Error unknown option \n");
 		break;
 		}
 	}
 
-	if ((filename[0] != 0) && (activePID != -1) && (outfilename[0] != 0))
+	if ((filename[0] != 0) && (activePID != -1) && (outfilename[0] != 0) && (commandfilename[0] != 0))
 	{
 		return PacketLoadingTask();
 	}
@@ -65,15 +74,23 @@ int main (int argc, char *argv[] )
 RawSection *Sect;
 unsigned char cont;
 unsigned char basebuffer[256];
+unsigned char match[16],mask[16];
+bool filterset=false;
 
 int ProcessSection(RawSection *Sect)
 {
 	if ( Sect != NULL )
 	{
-		if ( (Sect->complete() == 1) && ((Sect->TableType() == 0x3B) || (Sect->TableType() == 0x3C)))
+		if (!filterset)
+		{
+			if (read(commandpipe,match,16) == 16)
+				if (read(commandpipe,mask,16) == 16)
+					filterset = true;
+		}
+		if ( filterset && (Sect->complete() == 1) && ((Sect->filtermatch(match,mask,16))))
 		{
 			write(outfile,Sect->SectionPayload(), Sect->SectionPayloadLength());
-			return 1;
+			filterset = false;
 		}
 	}
 	return 0;
@@ -89,6 +106,7 @@ int PacketLoadingTask()
 	int i;
 	int f=-1;
 
+	signal(SIGPIPE,SIG_IGN);
 	// initialise the local structures
 	sprintf(fullfilename, "%s.0x%X", filename,activePID);
 	printf("Fifo name %s\n",fullfilename);
@@ -98,6 +116,7 @@ int PacketLoadingTask()
 	if (f == -1)
 		return -1;
 
+	
 	outfile = open(outfilename,O_WRONLY);
 	if (outfile == -1)
 	{
@@ -107,6 +126,18 @@ int PacketLoadingTask()
 	}
 
 	basepacketsize = 188;
+
+	commandpipe = open(commandfilename,O_RDONLY);
+
+	if (commandpipe == -1)
+	{
+		printf ("Failed to open command file\n");
+		close(outfile);
+		close(f);
+		unlink(fullfilename);
+		return -3;
+	}
+	
 
 	cont = 0xFF;
 	Sect = NULL;
@@ -167,6 +198,7 @@ int PacketLoadingTask()
 
 	close(f);
 	close(outfile);
+	close(commandpipe);
 	unlink(fullfilename);
 	if (Sect != NULL)
 	{
