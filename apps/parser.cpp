@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <signal.h>
 #include <string.h>
 #include <unistd.h>
 #include "filewriter.h"
@@ -165,10 +166,31 @@ bool printallsects= false;
 
 bool multistartpacket=false;
 
+volatile sig_atomic_t g_abort           = false;
+
+void sig_handler(int s)
+{
+  if (s==SIGINT && !g_abort)
+  {
+     signal(SIGINT, SIG_DFL);
+     g_abort = true;
+     return;
+  }
+  signal(SIGABRT, SIG_DFL);
+  signal(SIGSEGV, SIG_DFL);
+  signal(SIGFPE, SIG_DFL);
+}
+
 int main (int argc, char *argv[] )
 {
 	int option;
 	bool packetdecode = true;
+
+  signal(SIGSEGV, sig_handler);
+  signal(SIGABRT, sig_handler);
+  signal(SIGFPE, sig_handler);
+  signal(SIGINT, sig_handler);
+
 
 	memset(activePIDS,0,sizeof(activePIDS));
 	memset(activeTables,0,sizeof(activeTables));
@@ -380,7 +402,7 @@ int ProcessSection(RawSection *Sect,writer *level)
 int PacketLoadingTask()
 {
 	unsigned short basepacketsize,basestartpos=0;
-	unsigned long amountread;
+	long amountread=0,leftover;
 	unsigned long bufferpos = 0;
 	unsigned long pnum = 0;
 	int i;
@@ -404,9 +426,9 @@ int PacketLoadingTask()
 			w.setoutput(outfile);
 	}
 
-	amountread = read(f,basebuffer,512);
+	//amountread = read(f,basebuffer,512);
 
-	basepacketsize = getpacketsize(basebuffer,&basestartpos);
+	basepacketsize = 188;//getpacketsize(basebuffer,&basestartpos);
 
 	if (basepacketsize == 0xFFFF)
 	{
@@ -428,11 +450,17 @@ int PacketLoadingTask()
 		count[i] = 0L;
 	}
 
-	lseek(f,basestartpos,0);
+	//lseek(f,basestartpos,0);
 
-	while (((amountread = read(f,basebuffer,(PACKETBUFFERSIZE/basepacketsize)*basepacketsize))>basepacketsize))
+	while (!g_abort)
+	{
+	while (!g_abort && ((amountread = read(f,&basebuffer[bufferpos],(PACKETBUFFERSIZE/basepacketsize)*basepacketsize))>basepacketsize))
 	{
 		packet p; // define here so that it gets reset when we read from the file
+		if (amountread < 0)
+			continue;
+		leftover = amountread % basepacketsize;
+
 		while(bufferpos <= amountread-basepacketsize)
 		{
 			if (!p.getnext(basepacketsize,&basebuffer[bufferpos],pnum++))
@@ -456,8 +484,6 @@ int PacketLoadingTask()
 			{
 				continue;
 			}
-if ((cont[p.pid()] != 0xFF) && (((cont[p.pid()] + 1) % 0x10) != p.cont))
-printf("Continuity is skipped\n");
 
 			cont[p.pid()] = p.cont;
 
@@ -508,8 +534,13 @@ printf("Continuity is skipped\n");
 				}
 			}
 		}
-		bufferpos = 0;
+		if (leftover)
+			memcpy(basebuffer,&basebuffer[bufferpos],leftover);
+		bufferpos = leftover;
+
 		p.initialise();
+	}
+	if (!g_abort) usleep(50000);
 	}
 	gettingpids--;
 	for (i = 0; i <8192; i++)

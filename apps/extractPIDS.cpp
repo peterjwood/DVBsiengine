@@ -19,10 +19,31 @@ char outfilename[1024];
 int of[8192];
 int loopcount =1;
 
+volatile sig_atomic_t g_abort           = false;
+
+void sig_handler(int s)
+{
+  if (s==SIGINT && !g_abort)
+  {
+     signal(SIGINT, SIG_DFL);
+     g_abort = true;
+     return;
+  }
+  signal(SIGABRT, SIG_DFL);
+  signal(SIGSEGV, SIG_DFL);
+  signal(SIGFPE, SIG_DFL);
+}
+
+
 int main (int argc, char *argv[] )
 {
 	int option;
 	bool packetdecode = false;
+
+  signal(SIGSEGV, sig_handler);
+  signal(SIGABRT, sig_handler);
+  signal(SIGFPE, sig_handler);
+  signal(SIGINT, sig_handler);
 
 	filename[0] = 0;
 	outfilename[0] = 0;
@@ -62,7 +83,7 @@ char outname[1024];
 int PacketLoadingTask()
 {
 	unsigned short basepacketsize,basestartpos=0;
-	unsigned long amountread;
+	long amountread,leftover;
 	unsigned long bufferpos = 0;
 	unsigned long pnum = 0;
 	int i;
@@ -76,9 +97,9 @@ int PacketLoadingTask()
 	if (f == -1)
 		return -1;
 
-	amountread = read(f,basebuffer,512);
+	//amountread = read(f,basebuffer,512);
 
-	basepacketsize = getpacketsize(basebuffer,&basestartpos);
+	basepacketsize = 188;//getpacketsize(basebuffer,&basestartpos);
 
 	if (basepacketsize == 0xFFFF)
 	{
@@ -93,15 +114,17 @@ int PacketLoadingTask()
 	}
 
 	
-	while (loopcount--)
+	bufferpos = 0;
+	while (!g_abort)
 	{
-	lseek(f,basestartpos,0);
-
-
-	while (((amountread = read(f,basebuffer,(PACKETBUFFERSIZE/basepacketsize)*basepacketsize))>basepacketsize))
+	while (!g_abort && ((amountread = read(f,&basebuffer[bufferpos],(PACKETBUFFERSIZE/basepacketsize)*basepacketsize))>basepacketsize))
 	{
 		packet p; // define here so that it gets reset when we read from the file
-		while(bufferpos <= amountread-basepacketsize)
+		if (amountread < 0)
+			continue;
+		leftover = amountread % basepacketsize;
+
+		while(!g_abort && (bufferpos <= amountread-basepacketsize))
 		{
 			if (!p.getnext(basepacketsize,&basebuffer[bufferpos],pnum++))
 			{
@@ -119,7 +142,15 @@ int PacketLoadingTask()
 
 					of[p.pid()] = open(outname,O_WRONLY);
 			}
-			if (of[p.pid()] != -1)
+			if (of[0x1fff] != -1)
+			{
+				if(write(of[0x1fff],(unsigned char*)p,basepacketsize) != basepacketsize)
+				{
+					close(of[0x1fff]);
+					of[0x1fff] = -1;
+				}
+			}
+			if ((p.pid()!=0x1fff) && (of[p.pid()] != -1))
 			{
 				if(write(of[p.pid()],(unsigned char*)p,basepacketsize) != basepacketsize)
 				{
@@ -129,7 +160,10 @@ int PacketLoadingTask()
 			}
 
 		}
-		bufferpos = 0;
+		if (leftover)
+			memcpy(basebuffer,&basebuffer[bufferpos],leftover);
+		bufferpos = leftover;
+		
 	}
 	}
 	close(f);
