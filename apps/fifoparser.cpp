@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <string.h>
+#include <signal.h>
 #include <unistd.h>
 #include "filewriter.h"
 #include "SITable.h"
@@ -8,6 +9,23 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 #include "generaltools.h"
+
+
+volatile sig_atomic_t g_abort           = false;
+
+void sig_handler(int s)
+{
+  if (s==SIGINT && !g_abort)
+  {
+     signal(SIGINT, SIG_DFL);
+     g_abort = true;
+     return;
+  }
+  signal(SIGABRT, SIG_DFL);
+  signal(SIGSEGV, SIG_DFL);
+  signal(SIGFPE, SIG_DFL);
+}
+
 
 class filterwriter : public filewriter
 {
@@ -143,24 +161,10 @@ public:
 
 
 static int PacketLoadingTask();
-static int SectionLoadingTask();
 
 char filename[1024];
 char outfilename[1024];
-bool activePIDS[8192];
-bool activeTables[257];
 bool ExcludeDup = false; 
-bool PATAdd = false;
-bool PMTAdd = false;
-bool DSMCCAdd = false;
-bool SubsAdd = false;
-bool TTxtAdd = false;
-bool VidAdd = false;
-bool AudAdd = false;
-bool dostats = false;
-float BitRate = 27000000.0;
-int gettingpids = 0;
-bool TableSet = false;
 
 bool multistartpacket=false;
 
@@ -169,12 +173,15 @@ int main (int argc, char *argv[] )
 	int option;
 	bool packetdecode = false;
 
-	memset(activePIDS,0,sizeof(activePIDS));
-	memset(activeTables,0,sizeof(activeTables));
+  signal(SIGSEGV, sig_handler);
+  signal(SIGABRT, sig_handler);
+  signal(SIGFPE, sig_handler);
+  signal(SIGINT, sig_handler);
+
 	filename[0] = 0;
 	outfilename[0] = 0;
 
-	while ((option = getopt(argc,argv,"f:p:xPt:b:o:msT:A")) != -1)
+	while ((option = getopt(argc,argv,"f:xo:m")) != -1)
 	{
 		switch (option)
 		{
@@ -185,105 +192,29 @@ int main (int argc, char *argv[] )
 			strncpy(filename,optarg,1024);
 			printf("Filename = %s\n",filename);
 		break;
-		case 'A':
-		{
-			printf("All pids selected\n");
-			for (int i=0; i<8192; i++)
-				activePIDS[i] = true;
-			packetdecode=true;
-		}
-		break;
-		case 'p':
-		{
-			int pid = strtol(optarg,NULL,0);
-			printf ("Adding pid 0x%X\n",pid);
-			printf ("arg was %s\n",optarg);
-			if (pid < 8192)
-			{
-				packetdecode=true;
-				activePIDS[pid] = true;
-			}
-			else
-				printf("Invalid value\n");
-		}	
-		break;
-		case 'T':
-		{
-			int Tab = strtol(optarg,NULL,0);
-			printf ("Adding Table type 0x%X\n",Tab);
-			printf ("arg was %s\n",optarg);
-			if(Tab <257)
-			{
-				TableSet=true;
-				activeTables[Tab] = true;
-			}
-			else
-				printf("Invalid value\n");
-		}	
-		break;
 		case 'x':
 			ExcludeDup = true;
 			printf("Excluding duplicate tables\n");
-		break;
-		case 't':
-		{
-			int adds = strtol(optarg,NULL,0);
-			PMTAdd = true;
-			gettingpids=1;
-			if (adds & 1) DSMCCAdd = true;
-			if (adds & 2) SubsAdd = true;
-			if (adds & 4) TTxtAdd = true;
-			//if (adds & 8) VidAdd = true;
-			//if (adds & 16) AudAdd = true;
-			printf("Adding pids from the PMT \n");
-		}
-		break;
-		case 'P':
-			PATAdd = true;
-			gettingpids=1;
-			printf("Adding pids from the PAT \n");
-		break;
-		case 'b':
-		{
-			float br = strtof(optarg,NULL);
-			if (br != 0.0)
-				BitRate = br;
-			printf("Setting bitrate to %f\n",BitRate);
-			
-		}
 		break;
 		case 'o':
 			strncpy(outfilename,optarg,1024);
 			printf("Output Filename = %s\n",outfilename);
 		break;
-		case 's':
-			dostats = true;
-			printf("Stats\n"); 
-			break;
 		default:
 			fprintf(stderr,"Error unknown option \n");
 		break;
 		}
 	}
 
-	if (!TableSet)
-		for (int i = 0; i <257; i++)
-			activeTables[i] = true;
-
 	if (filename[0] != 0)
 	{
-		if (packetdecode)
-			return PacketLoadingTask();
-		else
-			return SectionLoadingTask();
+		return PacketLoadingTask();
 	}
 	return 1;
 }
 
-bool PidsUsed[8192];
-RawSection *Sect[8192];
-unsigned char cont[8192];
-unsigned int count[8192];
+RawSection *Sect;
+unsigned char cont;
 #define PACKETBUFFERSIZE 1024*1024
 unsigned char basebuffer[PACKETBUFFERSIZE];
 TableList *TList=NULL;
@@ -324,19 +255,9 @@ int ProcessSection(RawSection *Sect,writer *level)
 			{
 				if (TMPTable->complete())
 				{
-					if (level != NULL)
-					{
-						if (activeTables[TMPTable->TableType()])
-							TMPTable->Write(level);
-					}
-					else
-					{
-						if(TMPTable->getPIDs(activePIDS,PATAdd,PMTAdd,DSMCCAdd,SubsAdd,TTxtAdd,VidAdd,AudAdd))
-						{
-							return 1;
-						}
-					}
-					if ((!ExcludeDup) && (level != NULL)) // Don't do this when we are gathering pid info
+					TMPTable->Write(level);
+
+					if (!ExcludeDup)
 					{
 						TableList *TempTlist = TList->Remove(TMPTable);
 						if (TempTlist == TList)
@@ -365,7 +286,7 @@ int ProcessSection(RawSection *Sect,writer *level)
 int PacketLoadingTask()
 {
 	unsigned short basepacketsize,basestartpos=0;
-	unsigned long amountread;
+	long amountread=0,leftover;
 	unsigned long bufferpos = 0;
 	unsigned long pnum = 0;
 	int i;
@@ -374,8 +295,6 @@ int PacketLoadingTask()
 	int f=-1;
 	FILE *outfile=NULL;
 
-	printf("Packetised file decode selected\n");
-	
 	// initialise the local structures
 
 	mkfifo(filename,0666);
@@ -391,34 +310,22 @@ int PacketLoadingTask()
 			w.setoutput(outfile);
 	}
 
-	//amountread = read(f,basebuffer,512);
-
-	basepacketsize = 188;//getpacketsize(basebuffer,&basestartpos);
-
-	if (basepacketsize == 0xFFFF)
-	{
-		close(f);
-		if (outfile) fclose(outfile);
-		return -2;
-	}
-
+	basepacketsize = 188;
 
 	level1 = w.write("Tables");
 	
-	while (gettingpids > -1)
-	{
+	Sect = NULL;
+	cont = 0xFF;
 
-	for (i = 0; i <8192; i++)
+	while (!g_abort)
 	{
-		PidsUsed[i] = false;
-		Sect[i] = NULL;
-		cont[i] = 0xFF;
-		count[i] = 0L;
-	}
-
-	while (amountread = read(f,basebuffer,basepacketsize))
+	while (!g_abort && ((amountread = read(f,&basebuffer[bufferpos],(PACKETBUFFERSIZE/basepacketsize)*basepacketsize))>basepacketsize))
 	{
 		packet p; // define here so that it gets reset when we read from the file
+		if (amountread < 0)
+			continue;
+		leftover = amountread % basepacketsize;
+
 		while(bufferpos <= amountread-basepacketsize)
 		{
 			if (!p.getnext(basepacketsize,&basebuffer[bufferpos],pnum++))
@@ -428,60 +335,56 @@ int PacketLoadingTask()
 			}
 			bufferpos += basepacketsize;
 
-			count[p.pid()]++;
-
-			PidsUsed[p.pid()] = true;
-
-			if (!activePIDS[p.pid()] || (p.cont == cont[p.pid()])  || !p.datacontent())
+			if ((p.cont == cont)  || !p.datacontent())
 			{
 				continue;
 			}
 
-			cont[p.pid()] = p.cont;
+			cont = p.cont;
 
-			if ( (Sect[p.pid()] == NULL) && !p.payload_start())
+			if ( (Sect == NULL) && !p.payload_start())
 				continue;
 
 
 			while (!p.checkdataend())
 			{
-				if(!p.dataremaining() && (Sect[p.pid()] != NULL))
+				if(!p.dataremaining() && (Sect != NULL))
 				{
 					//missed some data for the section somewhere so delete it
-					delete Sect[p.pid()];
-					Sect[p.pid()] = NULL;
+					delete Sect;
+					Sect = NULL;
 				}
-				if ((Sect[p.pid()] == NULL))
+				if ((Sect == NULL))
 				{
-					Sect[p.pid()] = RawSection::Allocate(p);
+					Sect = RawSection::Allocate(p);
 				}
 				else
 				{
-					Sect[p.pid()]->PacketAdd(p);
+					Sect->PacketAdd(p);
 				}
 
-				if (Sect[p.pid()] != NULL)
+				if (Sect != NULL)
 				{
-					if (Sect[p.pid()]->complete() == 1)
+					if (Sect->complete() == 1)
 					{
 						int processval;
-						if ((processval = ProcessSection(Sect[p.pid()],gettingpids?NULL:level1)) == 1)
+						if ((processval = ProcessSection(Sect,level1)) == 1)
 						{
 							goto exitpoint;
 							//lseek(f,basestartpos,0);
 							amountread = basepacketsize;
-							delete Sect[p.pid()];
-							Sect[p.pid()] = NULL;
+							delete Sect;
+							Sect = NULL;
 							break;
 						}
-						delete Sect[p.pid()];
-						Sect[p.pid()] = NULL;
+						delete Sect;
+						Sect = NULL;
 					}
-					else if (Sect[p.pid()]->complete() == -1)
+					else if (Sect->complete() == -1)
 					{
 						// Checksum error
-						delete Sect[p.pid()];
-						Sect[p.pid()] = NULL;
+						delete Sect;
+						Sect = NULL;
 					}
 				}
 			}
@@ -489,14 +392,11 @@ int PacketLoadingTask()
 		bufferpos = 0;
 		p.initialise();
 	}
-	gettingpids--;
-	for (i = 0; i <8192; i++)
+	}
+	if (Sect != NULL)
 	{
-		if (Sect[i] != NULL)
-		{
-			delete Sect[i];
-			Sect[i] = NULL;
-		}
+		delete Sect;
+		Sect = NULL;
 	}
 
 	if (TList)
@@ -506,45 +406,16 @@ int PacketLoadingTask()
 		TList = NULL;
 	}	
 
-
-	}
 exitpoint:
-	if (dostats)
-	{
-		unsigned long totalpackets = 0L;
-
-		for (i = 0; i <8192; i++)
-		{
-			totalpackets += count[i];
-		}
-
-		level1 = w.write("PIDs");
-		for (i = 0; i <8192; i++)
-		{
-			char buffer[256];
-			float rate;
-			if (PidsUsed[i])
-			{
-				rate = ((float)count[i] / (float)totalpackets) * (float)BitRate;
-
-				sprintf(buffer, "0x%.4X - number of packets %lu - rate %1.8f bps",i,count[i],rate);
-				level1->write(buffer);
-			}
-		}
-	}
-
 	close(f);
 	unlink(filename);
 	if (outfile)
 		fclose(outfile);
 
-	for (i = 0; i <8192; i++)
+	if (Sect != NULL)
 	{
-		if (Sect[i] != NULL)
-		{
-			delete Sect[i];
-			Sect[i] = NULL;
-		}
+		delete Sect;
+		Sect = NULL;
 	}
 
 	if (TList)
@@ -552,83 +423,6 @@ exitpoint:
 		TList->clean(true);
 		delete TList;
 	}	
-
-	return 0;
-}
-
-int SectionLoadingTask()
-{
-	unsigned short basepacketsize = 4096,basestartpos = 0;
-	unsigned long amountread;
-	unsigned long bufferpos = 0;
-	SISection *CurrentSect = NULL;
-
-	filewriter w;
-	writer* level1;
-	int f=-1;
-	FILE *outfile=NULL;
-
-	printf("Section file decode selected\n");
-	// initialise the local structures
-	f = open(filename,O_RDONLY|O_LARGEFILE);
-
-	if (f == -1)
-		return -1;
-
-	if (outfilename[0] != 0)
-	{
-		outfile = fopen(outfilename,"w+");
-		if (outfile)
-			w.setoutput(outfile);
-	}
-
-	amountread = read(f,basebuffer,512);
-
-	// Check for packets ... should not have any
-	basepacketsize = getpacketsize(basebuffer,&basestartpos);
-
-	if (basepacketsize != 0xFFFF)
-	{
-		close(f);
-		if (outfile) fclose(outfile);
-		return -2;
-	}
-
-	//reset packet size to default section size
-	basepacketsize = 4096;
-
-
-	level1 = w.write("Tables");
-
-	lseek(f,basestartpos,0);
-
-	while (((amountread = read(f,basebuffer,(PACKETBUFFERSIZE/basepacketsize)*basepacketsize))>basepacketsize))
-	{
-		while(bufferpos <= amountread-basepacketsize)
-		{
-			CurrentSect = new SISection(&basebuffer[bufferpos]);
-			bufferpos += CurrentSect->FullSectionLength();;
-
-			if ( CurrentSect->complete())
-			{
-				ProcessSection(CurrentSect,level1);
-
-				delete CurrentSect;
-				CurrentSect = NULL;
-			}
-		}
-		bufferpos = 0;
-	}
-
-	close(f);
-	if (outfile)
-		fclose(outfile);
-
-	if (TList)
-	{
-		TList->clean(true);
-		delete TList;
-	}
 
 	return 0;
 }

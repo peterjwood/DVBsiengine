@@ -426,9 +426,7 @@ int PacketLoadingTask()
 			w.setoutput(outfile);
 	}
 
-	//amountread = read(f,basebuffer,512);
-
-	basepacketsize = 188;//getpacketsize(basebuffer,&basestartpos);
+	basepacketsize = 188;
 
 	if (basepacketsize == 0xFFFF)
 	{
@@ -449,8 +447,6 @@ int PacketLoadingTask()
 		cont[i] = 0xFF;
 		count[i] = 0L;
 	}
-
-	//lseek(f,basestartpos,0);
 
 	while (!g_abort)
 	{
