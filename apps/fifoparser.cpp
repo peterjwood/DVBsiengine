@@ -392,6 +392,7 @@ int PacketLoadingTask()
 		bufferpos = 0;
 		p.initialise();
 	}
+	if (!g_abort) usleep(50000);
 	}
 	if (Sect != NULL)
 	{
