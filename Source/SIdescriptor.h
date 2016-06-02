@@ -702,11 +702,11 @@ public:
 		desclevel->chardata(IDS_LANGCODE,(char*)&descriptordata[2],3);
 		desclevel->write(IDS_EVNAMELEN,descriptordata[5]);
 
-		desclevel->bindata(IDS_EVNAME,&(descriptordata[6]),descriptordata[5]);
+		desclevel->chardata(IDS_EVNAME,(char*)&(descriptordata[6]),descriptordata[5]);
 
 		desclevel->write(IDS_EVTEXTLEN,descriptordata[6 + descriptordata[5]]);
 
-		desclevel->bindata(IDS_EVTEXT,&(descriptordata[7 + descriptordata[5]]),descriptordata[6 + descriptordata[5]]);
+		desclevel->chardata(IDS_EVTEXT,(char*)&(descriptordata[7 + descriptordata[5]]),descriptordata[6 + descriptordata[5]]);
 		return true;
 	};
 };

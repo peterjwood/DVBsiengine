@@ -2,12 +2,12 @@
 //
 //////////////////////////////////////////////////////////////////////
 
-#if !defined(FILEWRITER_H__INCLUDED_)
-#define FILEWRITER_H__INCLUDED_
+#if !defined(JSONWRITER_H__INCLUDED_)
+#define JSONWRITER_H__INCLUDED_
 #include "writer.h"
 #include <stdio.h>
 
-class filewriter  : public writer
+class jsonwriter  : public writer
 {
 
 private:
@@ -17,15 +17,15 @@ private:
 	writer *writeduration(component_ids id,unsigned char *data, unsigned int len);
 public:
 	virtual bool init(void) {
-		filewriter();
+		jsonwriter();
 		return true;
 	};
-	filewriter()
+	jsonwriter()
 	{
 		output = stdout;
 		indent = 0;
 	};
-	virtual ~filewriter(){};
+	virtual ~jsonwriter(){};
 
 	void setoutput(FILE *f) {output=f;};
 
@@ -38,4 +38,4 @@ public:
 	virtual writer *chardata(component_ids id,char *data, unsigned int len);
 };
 
-#endif // !defined(WRITER_H__INCLUDED_)
+#endif // !defined(JSONWRITER_H__INCLUDED_)
