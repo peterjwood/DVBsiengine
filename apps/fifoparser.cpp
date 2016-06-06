@@ -3,6 +3,7 @@
 #include <signal.h>
 #include <unistd.h>
 #include "filewriter.h"
+#include "jsonwriter.h"
 #include "SITable.h"
 #include "Packet.h"
 #include <sys/types.h>
@@ -290,7 +291,7 @@ int PacketLoadingTask()
 	unsigned long bufferpos = 0;
 	unsigned long pnum = 0;
 	int i;
-	filewriter w;
+	jsonwriter w;
 	writer* level1;
 	int f=-1;
 	FILE *outfile=NULL;
@@ -313,7 +314,7 @@ int PacketLoadingTask()
 	basepacketsize = 188;
 
 	
-	w.write((char*)"Tables");
+	//w.write((char*)"Tables");
 	level1 = w.child();
 	
 	Sect = NULL;
