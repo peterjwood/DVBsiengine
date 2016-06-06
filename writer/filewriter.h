@@ -32,6 +32,7 @@ public:
 	virtual void doindent();
 	virtual writer *child(void);
 	virtual bool ProcessData(char *message);
+    	virtual bool writetitle(char *message){return write(message);};
 	virtual bool write(char *message);
 	virtual bool write(component_ids id,unsigned int val);
 	virtual bool write(component_ids id);

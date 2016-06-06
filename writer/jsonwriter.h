@@ -36,14 +36,18 @@ public:
 	void setoutput(FILE *f) {output=f;};
 
 	virtual bool ProcessData(char *message);
+    	virtual bool writetitle(char *message);
+    	virtual bool writetitle(component_ids id);
 	virtual bool write(char *message);
 	virtual bool write(component_ids id,unsigned int val);
+	virtual bool write(component_ids id,component_ids id2);
 	virtual bool write(component_ids id);
 	virtual bool bindata(component_ids id,unsigned char *data, unsigned int len);
 	virtual bool chardata(component_ids id,char *data, unsigned int len);
 	virtual writer *child(void);
 	virtual void removechild(writer* child);
 	virtual void startlist(component_ids id);
+	virtual void startlist(char *listname);
 	virtual void listitem(void);
 	virtual void endlist(void);
 	virtual void enditem(void);

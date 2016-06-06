@@ -129,20 +129,22 @@ static const char * cSIJSONStringTable[IDS_MAX_STRING]=
 /*    IDS_NID                 */   "Network ID",
 /*    IDS_SLASTSEC            */   "Segment Last Section",
 /*    IDS_LASTTABID           */   "Last Table ID",
+/*    IDS_EVENT               */   "Event",
 /*    IDS_EVENTID             */   "Event ID",
 /*    IDS_STIME               */   "Start Time",
 /*    IDS_DUR                 */   "Duration",
-/*    IDS_UNDEF               */   "Running status - undefined",
-/*    IDS_NOTRUN              */   "Running status - not running",
-/*    IDS_SOON                */   "Running status - starts in a few seconds",
-/*    IDS_PAUSING             */   "Running status - pausing",
-/*    IDS_RUN                 */   "Running status - running",
-/*    IDS_RESERR              */   "Running status - reserved -- ERROR",
+/*    IDS_RUNSTAT             */   "Running status",
+/*    IDS_UNDEF               */   "undefined",
+/*    IDS_NOTRUN              */   "not running",
+/*    IDS_SOON                */   "starts in a few seconds",
+/*    IDS_PAUSING             */   "pausing",
+/*    IDS_RUN                 */   "running",
+/*    IDS_RESERR              */   "reserved -- ERROR",
 /*    IDS_CAACT               */   "CA Active",
 /*    IDS_CANACT              */   "CA Not Active",
-/*    IDS_EVDESCLOOP          */   "Event Descriptor Loop - ",
+/*    IDS_EVDESCLOOP          */   "Event Descriptors",
 /*    IDS_NIT                 */   "NIT",
-/*    IDS_NDL                 */   "Network Descriptor Loop -",
+/*    IDS_NDL                 */   "Network Descriptor Loop",
 /*    IDS_PAT                 */   "PAT",
 /*    IDS_PROGNUM             */   "Program Number",
 /*    IDS_PMTPID              */   "Program map PID",
@@ -218,14 +220,14 @@ static const char * cSIJSONStringTable[IDS_MAX_STRING]=
 /*    IDS_CASYSID             */   "CA System ID",
 /*    IDS_CAPID               */   "CA PID",
 /*    IDS_CADATA              */   "CA DATA",
-/*    IDS_ISOLANGDESC         */   "ISO language descriptor -",
+/*    IDS_ISOLANGDESC         */   "ISO language descriptor",
 /*    IDS_ISOCODE             */   "ISO Code",
 /*    IDS_AUDTYPE             */   "Audio Type",
 /*    IDS_CLEANEFF            */   "Clean Effects",
 /*    IDS_HEARIMP             */   "Hearing Impaired",
 /*    IDS_VISIMP              */   "Visual Impaired commentary",
-/*    IDS_SYSCLKDESC          */   "System Clock Descriptor -",
-/*    IDS_EXTCLKREF           */   "External clock reference - ",
+/*    IDS_SYSCLKDESC          */   "System Clock Descriptor",
+/*    IDS_EXTCLKREF           */   "External clock reference",
 /*    IDS_CLKACCINT           */   "Clock accuracy integer",
 /*    IDS_CLKACCEXP           */   "Clock accuracy exponent",
 /*    IDS_MXBUFFUTILDESC      */   "Multiplex Buffer Utilisation Descriptor",
@@ -315,23 +317,23 @@ static const char * cSIJSONStringTable[IDS_MAX_STRING]=
 /*    IDS_STREAMIDDESC        */   "Stream Identifier descriptor",
 /*    IDS_CAIDDESC            */   "CA ID descriptor",
 /*    IDS_CONTENTDESC         */   "Content descriptor",
-/*    IDS_CONTENT1            */   "Movie/Drama:",
-/*    IDS_CONTENT2            */   "News/Current affairs:",
-/*    IDS_CONTENT3            */   "Show/Game show:",
-/*    IDS_CONTENT4            */   "Sports:",
-/*    IDS_CONTENT5            */   "Children's/Youth programmes:",
-/*    IDS_CONTENT6            */   "Music/Ballet/Dance:",
-/*    IDS_CONTENT7            */   "Arts/Culture (without music):",
-/*    IDS_CONTENT8            */   "Social/Political issues/Economics:",
-/*    IDS_CONTENT9            */   "Children's/Youth programmes: Education/ Science/Factual topics:",
-/*    IDS_CONTENT10           */   "Leisure hobbies:",
-/*    IDS_CONTENT11           */   "Special Characteristics:",
+/*    IDS_CONTENT1            */   "Movie/Drama",
+/*    IDS_CONTENT2            */   "News/Current affairs",
+/*    IDS_CONTENT3            */   "Show/Game show",
+/*    IDS_CONTENT4            */   "Sports",
+/*    IDS_CONTENT5            */   "Children's/Youth programmes",
+/*    IDS_CONTENT6            */   "Music/Ballet/Dance",
+/*    IDS_CONTENT7            */   "Arts/Culture (without music)",
+/*    IDS_CONTENT8            */   "Social/Political issues/Economics",
+/*    IDS_CONTENT9            */   "Children's/Youth programmes Education/ Science/Factual topics",
+/*    IDS_CONTENT10           */   "Leisure hobbies",
+/*    IDS_CONTENT11           */   "Special Characteristics",
 /*    IDS_CONTENT12           */   "User defined",
-/*    IDS_PARRATDESC          */   "Parental Rating descriptor -",
+/*    IDS_PARRATDESC          */   "Parental Rating descriptor",
 /*    IDS_COUNTRYCODE         */   "Country Code",
 /*    IDS_RATING              */   "Rating",
-/*    IDS_SUBDESC             */   "Subtitiling Descriptor -",
-/*    IDS_SUBTYPE             */   "Subtitile Type - ",
+/*    IDS_SUBDESC             */   "Subtitiling Descriptor",
+/*    IDS_SUBTYPE             */   "Subtitile Type",
 /*    IDS_EBUTTXSUB           */   "EBU Teletext subtitles",
 /*    IDS_ASSEBUTTX           */   "Associated EBU Teletext",
 /*    IDS_DVBSUB1             */   "DVB subtitles (normal) with no monitor aspect ratio criticality",
@@ -368,13 +370,13 @@ static const char * cSIJSONStringTable[IDS_MAX_STRING]=
 /*    IDS_PRIVDATSPECDESC     */   "Private data specifier descriptor -",
 /*    IDS_FREQLISTDESC        */   "Frequency list descriptor -",
 /*    IDS_FREQLIST            */   "Frequencies",
-/*    IDS_CODETYPE            */   "Coding type - ",
+/*    IDS_CODETYPE            */   "Coding type",
 /*    IDS_SAT                 */   "Satellite",
 /*    IDS_CAB                 */   "Cable",
 /*    IDS_TERR                */   "Terrestrial",
-/*    IDS_DATABROADDESC       */   "Data broadcast Descriptor -",
+/*    IDS_DATABROADDESC       */   "Data broadcast Descriptor",
 /*    IDS_ID2                 */   "ID",
-/*    IDS_SELECTOR            */   "Selector -",
+/*    IDS_SELECTOR            */   "Selector",
 /*    IDS_DATABROADIDDESC     */   "Data broadcast ID Descriptor",
 /*    IDS_UKNDESC             */   "Unknown Descriptor Type",
 /*    IDS_SATFREQ             */   "Frequency",
@@ -491,6 +493,23 @@ static jsonwriter NextLevel[256];
 
 char writebuffer[64*1024];
 
+bool jsonwriter::writetitle(component_ids id)
+{
+	if (id < IDS_MAX_STRING)
+	{
+		sprintf(writebuffer,"\"%s\" :",cSIJSONStringTable[id] );
+	}
+	else
+		sprintf(writebuffer,"Invalid string_id %.2X ",id);
+	return ProcessData(writebuffer);
+}
+
+bool jsonwriter::writetitle(char* message)
+{
+	sprintf(writebuffer,"\"%s\" :",message );
+	return ProcessData(writebuffer);
+}
+
 bool jsonwriter::write(char* message)
 {
 	return ProcessData(message);
@@ -531,6 +550,14 @@ void jsonwriter::startlist(component_ids id)
 
 	writer::startlist(id);
 }
+void jsonwriter::startlist(char *listname)
+{
+	sprintf(writebuffer,"\"%s\" :[", listname);
+	ProcessData(writebuffer);
+
+	writer::startlist(listname);
+}
+
 void jsonwriter::listitem()
 {
 	if (listcount)
@@ -553,6 +580,8 @@ void jsonwriter::endlist()
 }
 void jsonwriter::enditem()
 {
+	lastitem = true;
+	ProcessData("}");
 }
 writer *jsonwriter::child()
 {
@@ -584,6 +613,17 @@ bool jsonwriter::write(component_ids id, unsigned int val)
 	}
 	else
 		sprintf(writebuffer,"Invalid string_id %.2X ",id);
+
+	return ProcessData(writebuffer);
+}
+bool jsonwriter::write(component_ids id, component_ids id2)
+{
+	if ((id < IDS_MAX_STRING) && (id2 < IDS_MAX_STRING))
+	{
+		sprintf(writebuffer,"\"%s\" :\"%s\"",cSIJSONStringTable[id] ,cSIJSONStringTable[id2]);
+	}
+	else
+		sprintf(writebuffer,"Invalid string_id %.2X or %.2X",id,id2);
 
 	return ProcessData(writebuffer);
 }

@@ -10,7 +10,7 @@ bool PMT::Write(writer* parent)
 	unsigned short tmpshort;
 
 	level = parent->child();
-	parent->write(IDS_PMT);
+	parent->writetitle(IDS_PMT);
 
 	WriteGeneric(level);
 
@@ -42,7 +42,7 @@ void PMT::ProgramInfoLoop(writer *parent)
 	if(!get12bits(looplen))
 		return;
 
-	parent->write(IDS_PROGINF,looplen);
+	parent->write(IDS_LENGTH,looplen);
 
 	parent->startlist(IDS_PROGINF);
 	while (looplen)
@@ -62,8 +62,6 @@ bool PMT::StreamLoop(writer *parent)
 	writer *level,*level2;
 	unsigned short looplen,ushort_data;
 	unsigned char uchar_data;
-
-	parent->write(IDS_PROGSTR);
 
 	parent->startlist(IDS_PROGSTR);
 	while(currentpos < SectionPayloadLength())

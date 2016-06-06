@@ -244,9 +244,9 @@ bool SIdescriptor::decode(writer *level)
 {
 	writer *desclevel;
 
-	level->write(IDS_UKNDESC, DescriptorType());
+	level->writetitle(IDS_UKNDESC);
 	desclevel = level->child();
-
+	desclevel->write(IDS_DESCTYPE, DescriptorType());
 	desclevel->write(IDS_LENGTH, DescriptorLength());
 	desclevel->bindata(IDS_DATA,&descriptordata[2],DescriptorLength());
 

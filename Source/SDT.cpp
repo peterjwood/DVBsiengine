@@ -10,12 +10,12 @@ bool SDT::Write(writer* parent)
 	unsigned short tmpshort;
 
 	level = parent->child();
-	parent->write(IDS_SDT);
+	parent->writetitle(IDS_SDT);
 
 	if (TableType() == 0x42)
-		level->write(IDS_ACTUAL);
+		level->write(IDS_ACTUAL,IDS_TRUE);
 	else if (TableType() == 0x46)
-		level->write(IDS_OTHER);
+		level->write(IDS_ACTUAL,IDS_FALSE);
 	else
 		return false;
 
@@ -33,9 +33,8 @@ bool SDT::Write(writer* parent)
 
 	ServiceLoop(level);
 
-	level->enditem();
-
 	parent->removechild(level);
+	parent->enditem();
 	return true;
 }
 
@@ -50,8 +49,6 @@ bool SDT::ServiceLoop(writer* parent)
 	writer *level,*level2;
 	unsigned char tmp;
 	unsigned short looplen,tmpshort;
-
-	parent->write(IDS_SERVICES);
 
 	parent->startlist(IDS_SERVICES);
 	while(currentpos < SectionPayloadLength())
@@ -81,32 +78,32 @@ bool SDT::ServiceLoop(writer* parent)
 		switch ((tmp & 0xE0)>>5)
 		{
 		case 0:
-			level->write(IDS_UNDEF);
+			level->write(IDS_RUNSTAT,IDS_UNDEF);
 			break;
 		case 1:
-			level->write(IDS_NOTRUN);
+			level->write(IDS_RUNSTAT,IDS_NOTRUN);
 			break;
 		case 2:
-			level->write(IDS_SOON);
+			level->write(IDS_RUNSTAT,IDS_SOON);
 			break;
 		case 3:
-			level->write(IDS_PAUSING);
+			level->write(IDS_RUNSTAT,IDS_PAUSING);
 			break;
 		case 4:
-			level->write(IDS_RUN);
+			level->write(IDS_RUNSTAT,IDS_RUN);
 			break;
 		default:
-			level->write(IDS_RESERR);
+			level->write(IDS_RUNSTAT,IDS_RESERR);
 			break;
 		}
 
 		if (tmp & 0x10)
 		{
-			level->write(IDS_CAACT);
+			level->write(IDS_CAACT,IDS_TRUE);
 		}
 		else
 		{
-			level->write(IDS_CANACT);
+			level->write(IDS_CAACT,IDS_FALSE);
 		}
 
 		if(!get12bits(looplen))

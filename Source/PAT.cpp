@@ -14,7 +14,7 @@ bool PAT::Write(writer* parent)
 	writer *level,*level2;
 	unsigned short tmpshort;
 
-	parent->write(IDS_PAT);
+	parent->writetitle(IDS_PAT);
 	level = parent->child();
 
 	WriteGeneric(level);

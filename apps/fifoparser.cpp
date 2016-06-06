@@ -220,7 +220,7 @@ unsigned char cont;
 unsigned char basebuffer[PACKETBUFFERSIZE];
 TableList *TList=NULL;
 
-int ProcessSection(RawSection *Sect,writer *level)
+int ProcessSection(RawSection *Sect,writer *level, writer *parent)
 {
 	SITable *TMPTable=NULL;
 
@@ -256,6 +256,7 @@ int ProcessSection(RawSection *Sect,writer *level)
 			{
 				if (TMPTable->complete())
 				{
+					parent->listitem();
 					TMPTable->Write(level);
 
 					if (!ExcludeDup)
@@ -314,7 +315,7 @@ int PacketLoadingTask()
 	basepacketsize = 188;
 
 	
-	//w.write((char*)"Tables");
+	w.startlist("Tables");
 	level1 = w.child();
 	
 	Sect = NULL;
@@ -371,7 +372,7 @@ int PacketLoadingTask()
 					if (Sect->complete() == 1)
 					{
 						int processval;
-						if ((processval = ProcessSection(Sect,level1)) == 1)
+						if ((processval = ProcessSection(Sect,level1,&w)) == 1)
 						{
 							goto exitpoint;
 							//lseek(f,basestartpos,0);
@@ -412,6 +413,8 @@ int PacketLoadingTask()
 
 exitpoint:
 	w.removechild(level1);
+	w.endlist();
+	w.enditem();
 	close(f);
 	unlink(filename);
 	if (outfile)

@@ -287,7 +287,7 @@ unsigned int count[8192];
 unsigned char basebuffer[PACKETBUFFERSIZE];
 TableList *TList=NULL;
 
-int ProcessSection(RawSection *Sect,writer *level)
+int ProcessSection(RawSection *Sect,writer *level, writer *parent)
 {
 	SITable *TMPTable=NULL;
 
@@ -300,6 +300,7 @@ int ProcessSection(RawSection *Sect,writer *level)
                             RawSection *tmpsect = SISection::Allocate(Sect);
                             if ((tmpsect != NULL) && (level != NULL))
                             {
+				parent->listitem();
                                 tmpsect->Write(level);
                                 delete tmpsect;
                             }
@@ -336,7 +337,10 @@ int ProcessSection(RawSection *Sect,writer *level)
 					if (level != NULL)
 					{
 						if (activeTables[TMPTable->TableType()])
+						{
+							parent->listitem();
 							TMPTable->Write(level);
+						}
 					}
 					else
 					{
@@ -411,7 +415,7 @@ int PacketLoadingTask()
 		return -2;
 	}
 
-	//w.write("Tables");
+	w.startlist("Tables");
 	level1 = w.child();
 	
 	while (gettingpids > -1)
@@ -486,7 +490,7 @@ int PacketLoadingTask()
 					if (Sect[p.pid()]->complete() == 1)
 					{
 						int processval;
-						if ((processval = ProcessSection(Sect[p.pid()],gettingpids?NULL:level1)) == 1)
+						if ((processval = ProcessSection(Sect[p.pid()],gettingpids?NULL:level1, &w)) == 1)
 						{
 							//goto exitpoint;
 							//lseek(f,basestartpos,0);
@@ -536,6 +540,8 @@ int PacketLoadingTask()
 	}
 exitpoint:
 	w.removechild(level1);
+	w.endlist();
+	w.enditem();
 	if (dostats)
 	{
 		unsigned long totalpackets = 0L;
@@ -545,7 +551,7 @@ exitpoint:
 			totalpackets += count[i];
 		}
 
-		w.write("PIDs");
+		w.startlist("PIDs");
 		level1 = w.child();
 		for (i = 0; i <8192; i++)
 		{
@@ -553,6 +559,7 @@ exitpoint:
 			float rate;
 			if (PidsUsed[i])
 			{
+				w.listitem();
 				rate = ((float)count[i] / (float)totalpackets) * (float)BitRate;
 
 				sprintf(buffer, "0x%.4X - number of packets %lu - rate %1.8f bps",i,count[i],rate);
@@ -561,6 +568,8 @@ exitpoint:
 			}
 		}
 		w.removechild(level1);
+		w.endlist();
+		w.enditem();
 	}
 
 	close(f);
@@ -628,7 +637,7 @@ int SectionLoadingTask()
 	basepacketsize = 4096;
 
 
-	w.write("Tables");
+	w.startlist("Tables");
 	level1 = w.child();
 
 	lseek(f,basestartpos,0);
@@ -642,7 +651,7 @@ int SectionLoadingTask()
 
 			if ( CurrentSect->complete())
 			{
-				ProcessSection(CurrentSect,level1);
+				ProcessSection(CurrentSect,level1,&w);
 
 				delete CurrentSect;
 				CurrentSect = NULL;
@@ -661,6 +670,8 @@ int SectionLoadingTask()
 		delete TList;
 	}
 	w.removechild(level1);
+	w.endlist();
+	w.enditem();
 
 	return 0;
 }

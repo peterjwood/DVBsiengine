@@ -45,7 +45,7 @@ public:
 	{
 		writer *desclevel;
 
-		level->write(IDS_VSDESC);
+		level->writetitle(IDS_VSDESC);
 		desclevel = level->child();
 
 		desclevel->write(IDS_MULTIFRATE,descriptordata[2] & 0x80);
@@ -87,7 +87,7 @@ public:
 	{
 		writer *desclevel;
 
-		level->write(IDS_ASDESC);
+		level->writetitle(IDS_ASDESC);
 		desclevel = level->child();
 
 		desclevel->write(IDS_FREEFORM, descriptordata[2] & 0x08);
@@ -118,7 +118,7 @@ public:
 	{
 		writer *desclevel;
 
-		level->write(IDS_HIEDESC);
+		level->writetitle(IDS_HIEDESC);
 		desclevel = level->child();
 
 		desclevel->write(IDS_TYPE,descriptordata[2] & 0x0F);
@@ -148,7 +148,7 @@ public:
 	{
 		writer *desclevel;
 
-		level->write(IDS_REGDESC);
+		level->writetitle(IDS_REGDESC);
 		desclevel = level->child();
 
 		desclevel->write(IDS_FORMATID,(unsigned long)((descriptordata[2] << 24) + (descriptordata[3] << 16) + (descriptordata[4] << 8) + descriptordata[5]));
@@ -175,7 +175,7 @@ public:
 	{
 		writer *desclevel;
 
-		level->write(IDS_DSALIGNMENTDESC);
+		level->writetitle(IDS_DSALIGNMENTDESC);
 		desclevel = level->child();
 
 		desclevel->write(IDS_TYPE,descriptordata[2]);
@@ -197,7 +197,7 @@ public:
 	{
 		unsigned int val;
 		writer *desclevel;
-		level->write(IDS_TBGD);
+		level->writetitle(IDS_TBGD);
 		desclevel = level->child();
 
 		val = (descriptordata[2] << 6) + (descriptordata[3] >> 2);
@@ -225,7 +225,7 @@ public:
 	 bool decode(writer* level)
 	{
 		writer *desclevel;// Video Window Descriptor
-		level->write(IDS_VIDWINDESC);
+		level->writetitle(IDS_VIDWINDESC);
 		desclevel = level->child();
 
 		desclevel->write(IDS_HORIZOFF,(unsigned short)((descriptordata[2] << 6) + ((descriptordata[3] & 0xFC) >> 2)) );
@@ -249,7 +249,7 @@ public:
 	{
 		writer *desclevel;// CA Descriptor
 		unsigned short len;
-		level->write(IDS_CADESC);
+		level->writetitle(IDS_CADESC);
 		desclevel = level->child();
 		desclevel->write(IDS_CASYSID,(unsigned short)((descriptordata[2] << 8) + descriptordata[3] ) );
 		desclevel->write(IDS_CAPID,(unsigned short)(((descriptordata[4] & 0x1F) << 8) + descriptordata[5] ) );
@@ -283,8 +283,8 @@ public:
 
 			desclevel->write(IDS_AUDTYPE,descriptordata[len + 5]);
 		}
-		level->endlist();
 		level->removechild(desclevel);
+		level->endlist();
 		return true;
 	};
 };
@@ -302,7 +302,7 @@ public:
 	 bool decode(writer* level)
 	{
 		writer *desclevel;// System Clock Descriptor
-		level->write(IDS_SYSCLKDESC);
+		level->writetitle(IDS_SYSCLKDESC);
 		desclevel = level->child();
 
 		desclevel->write(IDS_EXTCLKREF,descriptordata[2] & 0x08);
@@ -326,7 +326,7 @@ public:
 	 bool decode(writer* level)
 	{
 		writer *desclevel;// Multiplex Buffer Utilisation Descriptor
-		level->write(IDS_MXBUFFUTILDESC);
+		level->writetitle(IDS_MXBUFFUTILDESC);
 		desclevel = level->child();
 
 		desclevel->write(IDS_BNDVALID,descriptordata[2] & 0x08);
@@ -351,7 +351,7 @@ public:
 	{
 		writer *desclevel;// Copyright Descriptor
 		unsigned short len;
-		level->write(IDS_COPYDESC);
+		level->writetitle(IDS_COPYDESC);
 		desclevel = level->child();
 		desclevel->write(IDS_COPYID,(unsigned long)((descriptordata[2] << 24) + (descriptordata[3] << 16) + (descriptordata[4] << 8) + descriptordata[5]) );
 		
@@ -374,7 +374,7 @@ public:
 	 bool decode(writer* level)
 	{
 		writer *desclevel;// Maximum Bitrate Descriptor
-		level->write(IDS_MAXBRDESC);
+		level->writetitle(IDS_MAXBRDESC);
 		desclevel = level->child();
 		desclevel->write(IDS_BR,(unsigned long)(((descriptordata[2] & 0x3F) << 16) + (descriptordata[3] << 8) + descriptordata[4] ) * 50 );
 		level->removechild(desclevel);
@@ -430,7 +430,7 @@ public:
 	bool decode(writer* level)
 	{
 		writer *desclevel;
-		level->write(IDS_STDDESC);
+		level->writetitle(IDS_STDDESC);
 		desclevel = level->child();
 
 		desclevel->write(IDS_LEAKVAL, descriptordata[2] & 1);
@@ -566,7 +566,7 @@ public:
 	 bool decode(writer* level)
 	{
 		writer *desclevel; // stuffing descriptor
-		level->write(IDS_STUFFDESC);
+		level->writetitle(IDS_STUFFDESC);
 		desclevel = level->child();
 		desclevel->write(IDS_LENGTH, DescriptorLength());
 		level->removechild(desclevel);
@@ -586,7 +586,7 @@ public:
 	 bool decode(writer* level)
 	{
 		writer *desclevel; // satellite delivery system descriptor
-		level->write(IDS_SATDSDESC);
+		level->writetitle(IDS_SATDSDESC);
 		desclevel = level->child();
 		desclevel->write(IDS_SATFREQ,(descriptordata[2]<<24)+(descriptordata[3]<<16)+(descriptordata[4]<<8)+(descriptordata[5] ));
 		desclevel->bindata(IDS_ORBPOS,&descriptordata[6],2);
@@ -617,7 +617,7 @@ public:
 	 bool decode(writer* level)
 	{
 		writer *desclevel; // cable delivery system descriptor
-		level->write(IDS_CABDSDESC);
+		level->writetitle(IDS_CABDSDESC);
 		desclevel = level->child();
 		desclevel->write(IDS_SATFREQ,(descriptordata[2]<<24)+(descriptordata[3]<<16)+(descriptordata[4]<<8)+(descriptordata[5] ));
 
@@ -645,7 +645,7 @@ public:
 	 bool decode(writer* level)
 	{
 		writer *desclevel; // service descriptor
-		level->write(IDS_SERVDESC);
+		level->writetitle(IDS_SERVDESC);
 		desclevel = level->child();
 
 		desclevel->write(IDS_SERVICETYPE2, descriptordata[2]);
@@ -706,7 +706,7 @@ public:
 	{
 		writer *desclevel,*level2; //Linkage descriptor
 		unsigned short i;
-		level->write(IDS_LINKDESC);
+		level->writetitle(IDS_LINKDESC);
 		desclevel = level->child();
 
 		desclevel->write(IDS_TSID2,(descriptordata[2]<<8) + descriptordata[3]);
@@ -750,7 +750,7 @@ public:
 	 bool decode(writer* level)
 	{
 		writer *desclevel;  // Short event descriptor
-		level->write(IDS_SHORTEVDESC);
+		level->writetitle(IDS_SHORTEVDESC);
 		desclevel = level->child();
 		desclevel->chardata(IDS_LANGCODE,(char*)&descriptordata[2],3);
 		desclevel->write(IDS_EVNAMELEN,descriptordata[5]);
@@ -780,7 +780,7 @@ public:
 		writer *desclevel;// Extended event descriptor
 		short len = 0;
 
-		level->write(IDS_EXTEVENTDESC);
+		level->writetitle(IDS_EXTEVENTDESC);
 		desclevel = level->child();
 		desclevel->write(IDS_DESCNUMLDNUM,descriptordata[2]);
 		desclevel->chardata(IDS_LANGCODE,(char*)&descriptordata[3],3);
@@ -941,7 +941,7 @@ public:
 	 bool decode(writer* level)
 	{
 		writer *desclevel;
-		level->write(IDS_TERRDELIVSYSDESC);
+		level->writetitle(IDS_TERRDELIVSYSDESC);
 		desclevel = level->child();
 
 		desclevel->write(IDS_CENTFREQ, ((unsigned long )(descriptordata[2] << 24) + (descriptordata[3] << 16) + (descriptordata[4] << 8) +(descriptordata[5]))*10);
@@ -1023,7 +1023,7 @@ public:
 		writer *desclevel; //Multilingual component descriptor
 		short len = 0;
 
-		level->write(IDS_MULTCOMPDESC);
+		level->writetitle(IDS_MULTCOMPDESC);
 		desclevel = level->child();
 
 		desclevel->write(IDS_COMPTAG,descriptordata[2]);
@@ -1070,7 +1070,7 @@ public:
 	 bool decode(writer* level)
 	{
 		writer *desclevel,*desclevel2;
-		level->write(IDS_FREQLISTDESC);
+		level->writetitle(IDS_FREQLISTDESC);
 		desclevel = level->child();
 
 		desclevel->write(IDS_CODETYPE,descriptordata[2] & 0x03);
@@ -1102,7 +1102,7 @@ public:
 	{
 		writer *desclevel; // Data broadcast descriptor
 		short i;
-		level->write(IDS_DATABROADDESC);
+		level->writetitle(IDS_DATABROADDESC);
 		desclevel = level->child();
 		desclevel->write(IDS_ID, (descriptordata[2]<<8) + descriptordata[3]);
 		desclevel->write(IDS_COMPTAG, descriptordata[4]);
@@ -1177,7 +1177,7 @@ public:
 	{
 		writer *desclevel;  //free_satellite_tunnelled_data_descriptor
 		short i;
-		level->write(IDS_FSTUNNELDESC);
+		level->writetitle(IDS_FSTUNNELDESC);
 		desclevel = level->child();
 		level->write(IDS_LENGTH, DescriptorLength());
 		level->startlist(IDS_FSTUNNELDESC);
@@ -1213,7 +1213,7 @@ public:
 	{
 		writer *desclevel;  //free_satellite_alt_tunnelled_data_descriptor
 		short i;
-		level->write(IDS_FSALTTUNNELDESC);
+		level->writetitle(IDS_FSALTTUNNELDESC);
 		desclevel = level->child();
 		level->write(IDS_LENGTH, DescriptorLength());
 		level->startlist(IDS_FSALTTUNNELDESC);
@@ -1241,7 +1241,7 @@ public:
 	{
 		writer *desclevel,*level2=NULL;  //free_satellite_linkage_descriptor
 		short i,j;
-		level->write(IDS_FSLINKDESC);
+		level->writetitle(IDS_FSLINKDESC);
 		desclevel = level->child();
 		level->write(IDS_LENGTH, DescriptorLength());
 		level->startlist(IDS_FSLINKDESC);
@@ -1320,7 +1320,7 @@ public:
 	{
 		writer *desclevel, *level2;// freesat region_name_descriptor
 		short i, j;
-		level->write(IDS_FSRNAMEDESC);
+		level->writetitle(IDS_FSRNAMEDESC);
 		desclevel = level->child();
 		level->write(IDS_LENGTH, DescriptorLength());
 		level->startlist(IDS_FSRNAMEDESC);

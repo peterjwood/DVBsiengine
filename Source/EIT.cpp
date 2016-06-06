@@ -22,7 +22,7 @@ bool EIT::Write(writer* parent)
 
 
 	level = parent->child();
-	parent->write(IDS_EIT);
+	parent->writetitle(IDS_EIT);
 
 	if (TableType() == 0x4E)
 		level->write(IDS_ACTUAL);
@@ -66,6 +66,7 @@ bool EIT::Write(writer* parent)
 	EventLoop(level);
 
 	parent->removechild(level);
+	parent->enditem();
 	return true;
 
 }
@@ -84,7 +85,8 @@ void EIT::EventLoop(writer* parent)
 	if(!getushort(ushort_data))
 		return;
 	level = parent->child();
-	parent->write(IDS_EVENTID, ushort_data);
+	parent->writetitle(IDS_EVENT);
+	level->write(IDS_EVENTID, ushort_data);
 
 	writeblock(IDS_STIME,5,level);
 
@@ -96,32 +98,32 @@ void EIT::EventLoop(writer* parent)
 	switch ((tmp & 0xE0)>>5)
 	{
 	case 0:
-		level->write(IDS_UNDEF);
+		level->write(IDS_RUNSTAT,IDS_UNDEF);
 		break;
 	case 1:
-		level->write(IDS_NOTRUN);
+		level->write(IDS_RUNSTAT,IDS_NOTRUN);
 		break;
 	case 2:
-		level->write(IDS_SOON);
+		level->write(IDS_RUNSTAT,IDS_SOON);
 		break;
 	case 3:
-		level->write(IDS_PAUSING);
+		level->write(IDS_RUNSTAT,IDS_PAUSING);
 		break;
 	case 4:
-		level->write(IDS_RUN);
+		level->write(IDS_RUNSTAT,IDS_RUN);
 		break;
 	default:
-		level->write(IDS_RESERR);
+		level->write(IDS_RUNSTAT,IDS_RESERR);
 		break;
 	}
 
 	if (tmp & 0x10)
 	{
-		level->write(IDS_CAACT);
+		level->write(IDS_CAACT,IDS_TRUE);
 	}
 	else
 	{
-		level->write(IDS_CANACT);
+		level->write(IDS_CAACT,IDS_FALSE);
 	}
 
 	if(!getbyte(uchar_data))
