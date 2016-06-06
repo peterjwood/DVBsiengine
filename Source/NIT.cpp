@@ -9,12 +9,12 @@ bool NIT::Write(writer* parent)
 	writer *level;
 
 	level = parent->child();
-	parent->write(IDS_NIT);
+	parent->writetitle(IDS_NIT);
 
 	if (TableType() == 0x40)
-		level->write(IDS_ACTUAL);
+		level->write(IDS_ACTUAL,IDS_TRUE);
 	else if (TableType() == 0x41)
-		level->write(IDS_OTHER);
+		level->write(IDS_ACTUAL,IDS_FALSE);
 	else
 		return false;
 
@@ -44,20 +44,18 @@ void NIT::NetworkDescriptorLoop(writer* parent)
 	if(!get12bits(looplen))
 		return;
 
-	level = parent->child();
-	parent->write(IDS_NDL);
 
 	parent->startlist(IDS_DESCRIPTORS);
 	while (looplen)
 	{
+		level = parent->child();
 		parent->listitem();
 		unsigned short size = DecodeDescriptor(level,looplen);
 		looplen -= size;
 		finddata(false,size);
+		parent->removechild(level);
 	}
 	parent->endlist();
-
-	parent->removechild(level);
 
 }
 
@@ -69,17 +67,14 @@ bool NIT::TSLoop(writer* parent)
 	if(!get12bits(TSlooplen))
 		return false;
 
-	level = parent->child();
-	parent->write(IDS_TRANSSTREAM);
-
 	parent->startlist(IDS_TRANSSTREAM);
 	while(TSlooplen)
 	{
 
+		level = parent->child();
 		parent->listitem();
 		if(!getushort(ushort_data))
 			return false;
-		level2 = level->child();
 		level->write(IDS_TSID, ushort_data);
 
 		TSlooplen-=2;
@@ -97,17 +92,18 @@ bool NIT::TSLoop(writer* parent)
 		level->startlist(IDS_DESCRIPTORS);
 		while (looplen)
 		{
+			level2 = level->child();
 			level->listitem();
 			unsigned short size = DecodeDescriptor(level2,looplen);
 			looplen -= size;
 			finddata(false,size);
 			TSlooplen-= size;
+			level->removechild(level2);
 		}
 		level->endlist();
-		level->removechild(level2);
+		parent->removechild(level);
 	}
 	parent->endlist();
-	parent->removechild(level);
 
 	return true;
 }
