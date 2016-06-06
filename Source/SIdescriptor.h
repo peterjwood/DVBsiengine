@@ -716,17 +716,17 @@ public:
 
 		if ((descriptordata[8] == 0x09)||(descriptordata[8] == 0x90)||(descriptordata[8] == 0x91))
 		{
-			level2 = desclevel->child();
 			desclevel->startlist(IDS_LINKS);
 			for (i = 9; i < DescriptorLength();)
 			{
+				level2 = desclevel->child();
 				desclevel->listitem();
 				level2->write(IDS_FSOUI,(descriptordata[i]<<16)+(descriptordata[i+1]<<8)+descriptordata[i+2]);
 				level2->write(IDS_LENGTH,descriptordata[i+4]);
 				i = descriptordata[i+3] +4 + i;
+				desclevel->removechild(level2);
 			}
 			desclevel->endlist();
-			desclevel->removechild(level2);
 		}
 		else
 		{
