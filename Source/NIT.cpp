@@ -81,7 +81,7 @@ bool NIT::TSLoop(writer* parent)
 
 		if(!getushort(ushort_data))
 			return false;
-		level2->write(IDS_ONID, ushort_data);
+		level->write(IDS_ONID, ushort_data);
 
 		TSlooplen-=2;
 
