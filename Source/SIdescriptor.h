@@ -540,16 +540,16 @@ public:
 	 bool decode(writer* level)
 	{
 		writer *desclevel; //service list descriptor
-		desclevel = level->child();
 		level->startlist(IDS_SLDESC);
 		for (unsigned short i = 0; i < DescriptorLength(); i+=3)
 		{
 			level->listitem();
+			desclevel = level->child();
 			desclevel->write(IDS_SERVICEID,(descriptordata[i+2]<<8)+descriptordata[i+3]);
 			desclevel->write(IDS_SERVICETYPE,descriptordata[i+4]);
+			level->removechild(desclevel);
 		}
 		level->endlist();
-		level->removechild(desclevel);
 		return true;
 	};
 };
