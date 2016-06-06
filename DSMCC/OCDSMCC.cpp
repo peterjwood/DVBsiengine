@@ -17,7 +17,8 @@ bool OCDII::Write(writer *level)
 
 
 	finddata(true,0);
-	level2 = level->write(IDS_DII);
+	level2 = level->child();
+	level->write(IDS_DII);
 
 	if (!getulong(ulong_data))
 		return false;
@@ -57,7 +58,8 @@ bool OCDII::Write(writer *level)
 		if(!getushort(Module))
 			return false;
 
-		level3 = level2->write(IDS_MODID, Module);
+		level3 = level2->child();
+		level2->write(IDS_MODID, Module);
 
 		if (!getulong(ulong_data))
 			return false;
@@ -131,7 +133,8 @@ bool OCDII::Write(writer *level)
 				{
 
 					// add to a compressed modules list 
-					level4 = level3->write(IDS_COMPDESC);
+					level4 = level3->child();
+					level3->write(IDS_COMPDESC);
 
 					finddata(false,1);  // ignore length byte as len is 4
 
@@ -144,32 +147,39 @@ bool OCDII::Write(writer *level)
 					level4->write(IDS_ORIGSIZ, ulong_data);
 
 					useinflen -= 7;
+					level3->removechild(level4);
 	
 				}
 				else
 				{
-					level4 = level3->write(IDS_OTHERDESC, descID);
+					level4 = level3->child();
+					level3->write(IDS_OTHERDESC, descID);
 
 					if(!getbyte(desclen))
 						return false;
-					level4 = level4->write(IDS_DESCLEN, desclen);
+					level4->write(IDS_DESCLEN, desclen);
+					level4 = level4->child();
 	
 					useinflen -= desclen + 2;
 	
 					writeblock(IDS_OTHERDESC,desclen,level4);
-                }
+					level3->removechild(level4);
+                		}
 			}
 		}
 
+		level2->removechild(level3);
 	}
 
 	if(!getushort(pdlen))
 		return false;
-	level3 = level2->write(IDS_PDLEN, pdlen);
+	level3 = level2->child();
+	level2->write(IDS_PDLEN, pdlen);
 
 	writeblock(IDS_PRIVDAT,pdlen,level3);
 
-
+	level2->removechild(level3);
+	level->removechild(level2);
 	return true;
 }
 bool OCDII::parse(struct OCDIIstruct *dii)
@@ -368,7 +378,8 @@ bool OCDSI::Write(writer *level)
     if (!finddata(true,0))
         return false;
 
-	level2 = level->write(IDS_DSI);
+	level2 = level->child();
+	level->write(IDS_DSI);
 
 	writeblock(IDS_SERVID,20,level2);
 
@@ -379,6 +390,8 @@ bool OCDSI::Write(writer *level)
     level2->write(IDS_PDLEN, pdlen);
 
     ServiceGateway(level2);
+	
+	level->removechild(level2);
 
 	return true;
 }
@@ -434,7 +447,8 @@ void DSMCCOCbase::compatibilitydesc(writer *level)
     if (len == 0) // no compatibility descriptor so bye bye
         return;
 
-    level2 = level->write(IDS_COMPATDESC);
+    level2 = level->child();
+	level->write(IDS_COMPATDESC);
 
     level2->write(IDS_LENGTH, len);
 
@@ -447,7 +461,8 @@ void DSMCCOCbase::compatibilitydesc(writer *level)
     {
         if (!getbyte(uchar_data))
             return;
-        level3 = level2->write(IDS_DESCTYPE, uchar_data);
+        level3 = level2->child();
+	level2->write(IDS_DESCTYPE, uchar_data);
 
         if (!getbyte(uchar_data))
             return;
@@ -477,16 +492,20 @@ void DSMCCOCbase::compatibilitydesc(writer *level)
             unsigned char len1;
             if (!getbyte(uchar_data))
                 return;
-            level4 = level3->write(IDS_SUBDESCTYPE, uchar_data);
+            level4 = level3->child();
+		level3->write(IDS_SUBDESCTYPE, uchar_data);
 
             if(!getbyte(len1))
                 return;
             level4->write(IDS_LENGTH, len1);
 
             writeblock(IDS_SUBDESCTYPE,len1,level4);
+	    level3->removechild(level4);
         }
+	level2->removechild(level3);
     }
 
+	level->removechild(level2);
 }
 bool DSMCCOCbase::parsecompatibilitydesc(struct compat *comp)
 {
@@ -609,7 +628,8 @@ void DSMCCOCbase::IOR(writer *level)
     writer *level2;
     unsigned long len;
 
-    level2 = level->write(IDS_IOPIOR);
+    level2 = level->child();
+	level->write(IDS_IOPIOR);
     if(!getulong(len))
         return;
     level2->write(IDS_DATALEN, len);
@@ -626,6 +646,8 @@ void DSMCCOCbase::IOR(writer *level)
 
     while (len--)
         taggedprofiles(level2);
+
+	level->removechild(level2);
 
 }
 bool DSMCCOCbase::parseIOR(IORstruct *ior)
@@ -697,7 +719,8 @@ void DSMCCOCbase::taggedprofiles(writer *level)
     unsigned char count;
     unsigned char uchar_data;
 
-    level2 = level->write(IDS_PROF);
+    level2 = level->child();
+	level->write(IDS_PROF);
 
     if(!getulong(ulong_data))
         return;
@@ -741,6 +764,7 @@ void DSMCCOCbase::taggedprofiles(writer *level)
         break;
         }
     }
+	level->removechild(level2);
 
 }
 
@@ -812,7 +836,8 @@ void DSMCCOCbase::ObjectLocation(writer *level)
     unsigned short ushort_data;
     unsigned char len,uchar_data;
 
-    level2 = level->write(IDS_BIOPOL);
+    level2 = level->child();
+	level->write(IDS_BIOPOL);
 
     if(!getbyte(uchar_data))
         return;
@@ -839,6 +864,7 @@ void DSMCCOCbase::ObjectLocation(writer *level)
     level2->write(IDS_OBJKEYLEN, len);
 
     writeblock(IDS_OBJKEY,len,level2);
+	level->removechild(level2);
 }
 bool DSMCCOCbase::parseObjectLocation(ObjectLocationstruct *ol)
 {
@@ -889,7 +915,8 @@ void DSMCCOCbase::ConnBinder(writer *level)
     writer *level2;
     unsigned char len,uchar_data;
 
-    level2 = level->write(IDS_DSMCONN);
+    level2 = level->child();
+	level->write(IDS_DSMCONN);
 
     if(!getbyte(uchar_data))
         return;
@@ -900,6 +927,7 @@ void DSMCCOCbase::ConnBinder(writer *level)
     level2->write(IDS_TAPSC,len);
     while (len--)
         Taps(level2);
+	level->removechild(level2);
 }
 bool DSMCCOCbase::parseConnBinder(ConnBinderstruct *conb)
 {
@@ -949,7 +977,8 @@ void DSMCCOCbase::Taps(writer *level)
 
     if(!getushort(ushort_data))
         return;
-    level2 = level->write(IDS_TAP, ushort_data);
+    level2 = level->child();
+	level->write(IDS_TAP, ushort_data);
 
     if(!getushort(ushort_data))
         return;
@@ -974,6 +1003,7 @@ void DSMCCOCbase::Taps(writer *level)
     if(!getulong(ulong_data))
         return;
     level2->write(IDS_TIMEOUT, ulong_data);
+	level->removechild(level2);
 }
 bool DSMCCOCbase::parseTaps(struct tap *tap)
 {
@@ -1026,7 +1056,8 @@ void OCModule::BIOPmessage(writer *level)
 			return;
 		if (biopdata == 0x42494F50)
 		{
-			level2 = level->write(IDS_BIOPMESS);
+			level2 = level->child();
+	level->write(IDS_BIOPMESS);
 		}
 		else
 			return;
@@ -1097,6 +1128,7 @@ void OCModule::BIOPmessage(writer *level)
 				}
 			}
 		}
+		level->removechild(level2);
 	}
 }
 void DSMCCOCbase::context(writer *level)
@@ -1212,7 +1244,8 @@ void OCModule::file(writer *level)
         unsigned short objinflen;
         unsigned long Len,ulong_data;
 
-        level2 = level->write(IDS_FILE);
+        level2 = level->child();
+	level->write(IDS_FILE);
 
         if(!getushort(objinflen))
                 return;
@@ -1235,6 +1268,7 @@ void OCModule::file(writer *level)
         level2->write(IDS_CONLEN, Len);
 
         writeblock(IDS_CONTENT,Len,level2);
+	level->removechild(level2);
 
 }
 #if 0
@@ -1284,7 +1318,8 @@ void OCModule::dir(writer *level)
         unsigned long Mblen;
         unsigned char uchar_data;
 
-        level2 = level->write(IDS_DIR);
+        level2 = level->child();
+	level->write(IDS_DIR);
 
         if(!getushort(len))
                 return;
@@ -1299,7 +1334,8 @@ void OCModule::dir(writer *level)
 
         if(!getushort(bindingscount))
                 return;
-        level3 = level2->write(IDS_BINDCOUNT, bindingscount);
+        level3 = level2->child();
+	level2->write(IDS_BINDCOUNT, bindingscount);
 
         while(bindingscount--)
         {
@@ -1319,6 +1355,8 @@ void OCModule::dir(writer *level)
                 writeblock(IDS_OBJINFO, objinflen,level3);
 
         }
+	level2->removechild(level3);
+	level->removechild(level2);
 }
 bool OCModule::extractdir(struct BIOPDirlist *dest)
 {
@@ -1399,7 +1437,8 @@ void OCModule::BIOPName(writer *level)
 	if(!getbyte(componentscount))
 		return;
 
-	level2 = level->write(IDS_BIOPNAME);
+	level2 = level->child();
+	level->write(IDS_BIOPNAME);
 
 	level2->write(IDS_COMPCOUNT, componentscount);
 
@@ -1417,6 +1456,7 @@ void OCModule::BIOPName(writer *level)
 
 		writeblock(IDS_OBJKIND,Len,level2);
 	}
+	level->removechild(level2);
 }
 bool OCModule::extractBIOPName(struct DirItem *dest)
 {
@@ -1462,7 +1502,8 @@ void OCModule::srg(writer *level)
 	unsigned short len,bindingscount,objinflen;
 	unsigned long Mblen;
 
-	level2 = level->write(IDS_SRG);
+	level2 = level->child();
+	level->write(IDS_SRG);
 
 	if(!getushort(len))
 		return;
@@ -1477,7 +1518,8 @@ void OCModule::srg(writer *level)
 
 	if(!getushort(bindingscount))
 		return;
-	level3 = level2->write(IDS_BINDCOUNT, bindingscount);
+	level3 = level2->child();
+	level2->write(IDS_BINDCOUNT, bindingscount);
 
 	while(bindingscount--)
 	{
@@ -1498,6 +1540,8 @@ void OCModule::srg(writer *level)
 		writeblock(IDS_OBJINFO, objinflen,level3);
 
 	}
+	level2->removechild(level3);
+	level->removechild(level2);
 }
 
 #if 0
@@ -1678,7 +1722,8 @@ void OCDSI::ServiceGateway(writer *level)
     unsigned short len;
     unsigned char count;
 
-    level2 = level->write(IDS_SERVGATE);
+    level2 = level->child();
+	level->write(IDS_SERVGATE);
 
     IOR(level2);
 
@@ -1696,6 +1741,7 @@ void OCDSI::ServiceGateway(writer *level)
     level2->write(IDS_USEINFLEN,len);
 
     writeblock(IDS_USEINFO,len,level2);
+	level->removechild(level2);
 
 }
 

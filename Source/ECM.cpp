@@ -8,7 +8,8 @@ bool ECM::Write(writer* parent)
 {
 	writer* level;
 
-	level = parent->write(IDS_ECM, TableType());
+	parent->write(IDS_ECM, TableType());
+	level = parent->child();
 
 	level->write(IDS_LENGTH, SectionLength());
 
@@ -16,6 +17,7 @@ bool ECM::Write(writer* parent)
 
 	writeblock(IDS_PRIVDAT,SectionPayloadLength(),level);
 
+	parent->removechild(level);
 	return true;
 
 }

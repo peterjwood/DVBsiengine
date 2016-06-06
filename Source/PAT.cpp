@@ -11,10 +11,11 @@
 
 bool PAT::Write(writer* parent)
 {
-	writer *level;
+	writer *level,*level2;
 	unsigned short tmpshort;
 
-	level = parent->write(IDS_PAT);
+	parent->write(IDS_PAT);
+	level = parent->child();
 
 	WriteGeneric(level);
 
@@ -22,27 +23,34 @@ bool PAT::Write(writer* parent)
 
 	finddata(true,0);
 
+	
+	level->startlist(IDS_PROGSTR);
 	while(currentpos < SectionPayloadLength())
 	{
 		if(!getushort(tmpshort))
 			return false;
+		level2 = level->child();
 
-		level->write(IDS_PROGNUM, tmpshort);
+		level->listitem();
+		level2->write(IDS_PROGNUM, tmpshort);
 
 		if (tmpshort)
 		{
 			if(!getushort(tmpshort))
 				return false;
-			level->write(IDS_PMTPID, (tmpshort & 0x1FFF));
+			level2->write(IDS_PMTPID, (tmpshort & 0x1FFF));
 		}
 		else
 		{
 			if(!getushort(tmpshort))
 				return false;
-			level->write(IDS_NETPID, (tmpshort & 0x1FFF));
+			level2->write(IDS_NETPID, (tmpshort & 0x1FFF));
 		}
+		level->removechild(level2);
 	}
+	level->endlist();
 
+	parent->removechild(level);
 	return true;
 }
 

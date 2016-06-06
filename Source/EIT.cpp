@@ -21,7 +21,8 @@ bool EIT::Write(writer* parent)
 	unsigned short ushort_data;
 
 
-	level = parent->write(IDS_EIT);
+	level = parent->child();
+	parent->write(IDS_EIT);
 
 	if (TableType() == 0x4E)
 		level->write(IDS_ACTUAL);
@@ -64,6 +65,7 @@ bool EIT::Write(writer* parent)
 
 	EventLoop(level);
 
+	parent->removechild(level);
 	return true;
 
 }
@@ -75,13 +77,14 @@ unsigned short EIT::ServiceID()
 
 void EIT::EventLoop(writer* parent)
 {
-	writer *level;
+	writer *level,*level2;
 	unsigned short looplen, year,month,day,tmp,ushort_data;
 	unsigned char uchar_data,uchar_data1,uchar_data2;
 
 	if(!getushort(ushort_data))
 		return;
-	level = parent->write(IDS_EVENTID, ushort_data);
+	level = parent->child();
+	parent->write(IDS_EVENTID, ushort_data);
 
 	writeblock(IDS_STIME,5,level);
 
@@ -125,17 +128,22 @@ void EIT::EventLoop(writer* parent)
 		return;
 	looplen = uchar_data + ((tmp & 0xF) << 8);
 
-	level = level->write(IDS_EVDESCLOOP);
 
+	level->startlist(IDS_EVDESCLOOP);
 	while (looplen)
 	{
-		unsigned short size = DecodeDescriptor(level,looplen);
+		level2 = level->child();
+		level->listitem();
+		unsigned short size = DecodeDescriptor(level2,looplen);
 		looplen -= size;
 		finddata(false,size);
 
+		level->removechild(level2);
 		if (!size)
 			return;
 	}
+	level->endlist();
+	parent->removechild(level);
 	
 }
 

@@ -269,6 +269,7 @@ static const char * cSIJSONStringTable[IDS_MAX_STRING]=
 /*    IDS_AVAIL               */   "available",
 /*    IDS_NOTAVAIL            */   "not available",
 /*    IDS_LINKDESC            */   "Linkage descriptor",
+/*    IDS_LINKS               */   "Links",
 /*    IDS_TSID2               */   "Transport Stream ID",
 /*    IDS_ONID2               */   "Original Network ID",
 /*    IDS_SHORTEVDESC         */   "Short event descriptor",
@@ -366,6 +367,7 @@ static const char * cSIJSONStringTable[IDS_MAX_STRING]=
 /*    IDS_DESCRIPTION         */   "Description - ",
 /*    IDS_PRIVDATSPECDESC     */   "Private data specifier descriptor -",
 /*    IDS_FREQLISTDESC        */   "Frequency list descriptor -",
+/*    IDS_FREQLIST            */   "Frequencies",
 /*    IDS_CODETYPE            */   "Coding type - ",
 /*    IDS_SAT                 */   "Satellite",
 /*    IDS_CAB                 */   "Cable",
@@ -475,6 +477,7 @@ static const char * cSIJSONStringTable[IDS_MAX_STRING]=
 /*    IDS_CAROUSELIDDESC      */   "Carousel ID Descriptor",
 /*    IDS_ASSOCIATIONTAGDESC  */   "Association Tag Descriptor",
 /*    IDS_DEFASSTAGDESC       */   "Deferred Association Tag Descriptor",
+/*    IDS_DESCRIPTORS         */   "Descriptors",
 };
 
 
@@ -484,36 +487,96 @@ static const char * cSIJSONStringTable[IDS_MAX_STRING]=
 // Construction/Destruction
 //////////////////////////////////////////////////////////////////////
 
-static jsonwriter nextlevel[256];
+static jsonwriter NextLevel[256];
 
 char writebuffer[64*1024];
 
-void jsonwriter::doindent()
+bool jsonwriter::write(char* message)
 {
+	return ProcessData(message);
+}
+bool jsonwriter::ProcessData(char* message)
+{	
 	int i;
 
 	for (i = 0; (i < indent); i++)
 		fprintf(output,"\t");
-	fprintf(output,"\t");
-}
 
-writer *jsonwriter::write(char* message)
-{
-	return ProcessData(message);
-}
-writer *jsonwriter::ProcessData(char* message)
-{	
-	doindent();
-	fprintf(output, "{%s},",message);
-
+	if (firstitem)
+	{
+		fprintf(output, "{%s",message);
+		firstitem=false;
+	}
+	else if (lastitem)
+	{
+		fprintf(output, "%s",message);
+		lastitem=false;
+		firstitem=true;
+	}
+	else
+		fprintf(output, ",%s",message);
+	
 	fprintf(output,"\n");
+	return true;
+}
+void jsonwriter::startlist(component_ids id)
+{
+	if (id < IDS_MAX_STRING)
+	{
+		sprintf(writebuffer,"\"%s\" :[",cSIJSONStringTable[id] );
+	}
+	else
+		sprintf(writebuffer,"Invalid string_id %.2X ",id);
+	ProcessData(writebuffer);
 
-	nextlevel[indent].indent = indent + 1;
-	nextlevel[indent].output = output;
-	return &nextlevel[indent];
+	writer::startlist(id);
+}
+void jsonwriter::listitem()
+{
+	if (listcount)
+	{
+		for (int i = 0; (i < indent); i++)
+			fprintf(output,"\t");
+		fprintf(output,",\n");
+	}
+	writer::listitem();
 }
 
-writer *jsonwriter::write(component_ids id, unsigned int val)
+void jsonwriter::endlist()
+{
+	for (int i = 0; (i < indent); i++)
+		fprintf(output,"\t");
+
+	fprintf(output, "]\n");
+
+	writer::endlist();
+}
+void jsonwriter::enditem()
+{
+}
+writer *jsonwriter::child()
+{
+	NextLevel[indent].init();
+	NextLevel[indent].indent = indent + 1;
+	NextLevel[indent].output = output;
+	return &NextLevel[indent];
+}
+void jsonwriter::removechild(writer *child)
+{
+	if (child == &NextLevel[indent])
+	{
+		if (NextLevel[indent].lastitem==false)
+		{
+			NextLevel[indent].lastitem=true;
+		}
+		if (NextLevel[indent].firstitem==false)
+			child->ProcessData("}");
+	}
+	else
+		printf("Trying to free wrong child\n");
+}
+
+bool jsonwriter::write(component_ids id, unsigned int val)
 {
 	if (id < IDS_MAX_STRING)
 	{
@@ -525,20 +588,24 @@ writer *jsonwriter::write(component_ids id, unsigned int val)
 	return ProcessData(writebuffer);
 }
 
-writer *jsonwriter::write(component_ids id)
+bool jsonwriter::write(component_ids id)
 {
+#if 0
+	return true;
+#else
 
 	if (id < IDS_MAX_STRING)
 	{
-		sprintf(writebuffer,"\"%s\":\"\"",cSIJSONStringTable[id]);
+		sprintf(writebuffer,"\"%s\":\"true\"",cSIJSONStringTable[id]);
 	}
 	else
 		sprintf(writebuffer,"Unknown ID %d",id);
 
 	return ProcessData(writebuffer);
+#endif
 }
 
-writer *jsonwriter::writetime(component_ids id,unsigned char *data, unsigned int len)
+bool jsonwriter::writetime(component_ids id,unsigned char *data, unsigned int len)
 {
 	if ((id != IDS_STIME) || (len != 5))
 		sprintf(writebuffer, "writetime called with wrong ID %d or len %d",id,len);
@@ -562,7 +629,7 @@ writer *jsonwriter::writetime(component_ids id,unsigned char *data, unsigned int
 	}
 	return ProcessData(writebuffer);
 }
-writer *jsonwriter::writeduration(component_ids id,unsigned char *data, unsigned int len)
+bool jsonwriter::writeduration(component_ids id,unsigned char *data, unsigned int len)
 {
 	if ((id != IDS_DUR) || (len != 3))
 		sprintf(writebuffer, "writeduration called with wrong ID %d or len %d",id,len);
@@ -574,7 +641,7 @@ writer *jsonwriter::writeduration(component_ids id,unsigned char *data, unsigned
 }
 
 
-writer *jsonwriter::bindata(component_ids id,unsigned char *data, unsigned int len)
+bool jsonwriter::bindata(component_ids id,unsigned char *data, unsigned int len)
 {
 	unsigned int pos;
 
@@ -590,13 +657,14 @@ writer *jsonwriter::bindata(component_ids id,unsigned char *data, unsigned int l
 	{
 		for (pos=0;pos < len; pos++)
 		{
-			sprintf(writebuffer,"%s%.2X ", writebuffer,data[pos]);
+			sprintf(writebuffer,"%s%.2X", writebuffer,data[pos]);
 		}
+		strcat(writebuffer,"\"");
 	}
 	return ProcessData(writebuffer);
 }
 
-writer *jsonwriter::chardata(component_ids id,char *data, unsigned int len)
+bool jsonwriter::chardata(component_ids id,char *data, unsigned int len)
 {
 	unsigned int pos;
 

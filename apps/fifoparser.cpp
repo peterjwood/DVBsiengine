@@ -32,8 +32,8 @@ class filterwriter : public filewriter
 private:
 	component_ids lastid;
 public:
-	virtual writer *write(char *message){return this;};
-	virtual writer *write(component_ids id,unsigned int val){
+	virtual bool write(char *message){return this;};
+	virtual bool write(component_ids id,unsigned int val){
 		if (id == IDS_MODID)
 			filewriter::write(id,val);
 		if (lastid == IDS_MODID)
@@ -46,9 +46,9 @@ public:
 		lastid = id;
 		return this;
 	};
-	virtual writer *write(component_ids id){return this;};
-	virtual writer *bindata(component_ids id,unsigned char *data, unsigned int len){return this;};
-	virtual writer *chardata(component_ids id,char *data, unsigned int len){return this;};
+	virtual bool write(component_ids id){return this;};
+	virtual bool bindata(component_ids id,unsigned char *data, unsigned int len){return this;};
+	virtual bool chardata(component_ids id,char *data, unsigned int len){return this;};
 
 	
 	filterwriter(){lastid = IDS_UNKNOWN;};
@@ -312,7 +312,9 @@ int PacketLoadingTask()
 
 	basepacketsize = 188;
 
-	level1 = w.write("Tables");
+	
+	w.write((char*)"Tables");
+	level1 = w.child();
 	
 	Sect = NULL;
 	cont = 0xFF;
@@ -408,6 +410,7 @@ int PacketLoadingTask()
 	}	
 
 exitpoint:
+	w.removechild(level1);
 	close(f);
 	unlink(filename);
 	if (outfile)

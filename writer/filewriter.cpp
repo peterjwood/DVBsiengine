@@ -269,6 +269,7 @@ const char * cSIStringTable[IDS_MAX_STRING]=
 /*    IDS_AVAIL               */   "available",
 /*    IDS_NOTAVAIL            */   "not available",
 /*    IDS_LINKDESC            */   "Linkage descriptor",
+/*    IDS_LINKS               */   "Links",
 /*    IDS_TSID2               */   "Transport Stream ID",
 /*    IDS_ONID2               */   "Original Network ID",
 /*    IDS_SHORTEVDESC         */   "Short event descriptor",
@@ -366,6 +367,7 @@ const char * cSIStringTable[IDS_MAX_STRING]=
 /*    IDS_DESCRIPTION         */   "Description - ",
 /*    IDS_PRIVDATSPECDESC     */   "Private data specifier descriptor -",
 /*    IDS_FREQLISTDESC        */   "Frequency list descriptor -",
+/*    IDS_FREQLIST            */   "Frequencies",
 /*    IDS_CODETYPE            */   "Coding type - ",
 /*    IDS_SAT                 */   "Satellite",
 /*    IDS_CAB                 */   "Cable",
@@ -475,6 +477,7 @@ const char * cSIStringTable[IDS_MAX_STRING]=
 /*    IDS_CAROUSELIDDESC      */   "Carousel ID Descriptor",
 /*    IDS_ASSOCIATIONTAGDESC  */   "Association Tag Descriptor",
 /*    IDS_DEFASSTAGDESC       */   "Deferred Association Tag Descriptor",
+/*    IDS_DESCRIPTORS         */   "Descriptors",
 };
 
 
@@ -484,7 +487,7 @@ const char * cSIStringTable[IDS_MAX_STRING]=
 // Construction/Destruction
 //////////////////////////////////////////////////////////////////////
 
-static filewriter nextlevel[256];
+static filewriter NextLevel[256];
 
 char writebuffer[1024];
 
@@ -497,23 +500,33 @@ void filewriter::doindent()
 	fprintf(output,"--");
 }
 
-writer *filewriter::write(char* message)
+bool filewriter::write(char* message)
 {
 	return ProcessData(message);
 }
-writer *filewriter::ProcessData(char* message)
+bool filewriter::ProcessData(char* message)
 {	
 	doindent();
-	fprintf(output, "%s",message);
+	if (inlist)
+		fprintf(output, "%d:%s",listcount,message);
+	else
+		fprintf(output, "%s",message);
 
 	fprintf(output,"\n");
 
-	nextlevel[indent].indent = indent + 1;
-	nextlevel[indent].output = output;
-	return &nextlevel[indent];
+	return true;
+}
+void filewriter::enditem()
+{
+}
+writer *filewriter::child()
+{
+	NextLevel[indent].indent = indent + 1;
+	NextLevel[indent].output = output;
+	return &NextLevel[indent];
 }
 
-writer *filewriter::write(component_ids id, unsigned int val)
+bool filewriter::write(component_ids id, unsigned int val)
 {
 	if (id < IDS_MAX_STRING)
 	{
@@ -525,7 +538,7 @@ writer *filewriter::write(component_ids id, unsigned int val)
 	return ProcessData(writebuffer);
 }
 
-writer *filewriter::write(component_ids id)
+bool filewriter::write(component_ids id)
 {
 
 	if (id < IDS_MAX_STRING)
@@ -538,10 +551,12 @@ writer *filewriter::write(component_ids id)
 	return ProcessData(writebuffer);
 }
 
-writer *filewriter::writetime(component_ids id,unsigned char *data, unsigned int len)
+bool filewriter::writetime(component_ids id,unsigned char *data, unsigned int len)
 {
 	if ((id != IDS_STIME) || (len != 5))
+	{
 		sprintf(writebuffer, "writetime called with wrong ID %d or len %d",id,len);
+	}
 	else
 	{
 		unsigned short tmp,year,month,day;
@@ -562,7 +577,7 @@ writer *filewriter::writetime(component_ids id,unsigned char *data, unsigned int
 	}
 	return ProcessData(writebuffer);
 }
-writer *filewriter::writeduration(component_ids id,unsigned char *data, unsigned int len)
+bool filewriter::writeduration(component_ids id,unsigned char *data, unsigned int len)
 {
 	if ((id != IDS_DUR) || (len != 3))
 		sprintf(writebuffer, "writeduration called with wrong ID %d or len %d",id,len);
@@ -574,7 +589,7 @@ writer *filewriter::writeduration(component_ids id,unsigned char *data, unsigned
 }
 
 
-writer *filewriter::bindata(component_ids id,unsigned char *data, unsigned int len)
+bool filewriter::bindata(component_ids id,unsigned char *data, unsigned int len)
 {
 	unsigned int pos;
 
@@ -628,12 +643,10 @@ writer *filewriter::bindata(component_ids id,unsigned char *data, unsigned int l
 			ProcessData(writebuffer);
 		indent-=2;
 	}
-	nextlevel[indent].indent = indent + 1;
-	nextlevel[indent].output = output;
-	return &nextlevel[indent];
+	return true;
 }
 
-writer *filewriter::chardata(component_ids id,char *data, unsigned int len)
+bool filewriter::chardata(component_ids id,char *data, unsigned int len)
 {
 	unsigned int pos;
 
@@ -643,7 +656,7 @@ writer *filewriter::chardata(component_ids id,char *data, unsigned int len)
 	writebuffer[0] = 0;
 	for (pos=0;pos < len; pos++)
 	{
-		if (data[pos] > 0x20) 
+		if (data[pos] > 0x1f) 
 		{
 			sprintf(writebuffer,"%s%c",writebuffer,data[pos]);
 		}
@@ -660,8 +673,5 @@ writer *filewriter::chardata(component_ids id,char *data, unsigned int len)
 		ProcessData(writebuffer);
 	indent--;
 
-	nextlevel[indent].indent = indent + 1;
-	nextlevel[indent].output = output;
-	return &nextlevel[indent];
-
+	return true;
 }

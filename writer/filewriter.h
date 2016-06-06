@@ -13,8 +13,8 @@ class filewriter  : public writer
 private:
 	FILE *output;
 	short indent;
-	writer *writetime(component_ids id,unsigned char *data, unsigned int len);
-	writer *writeduration(component_ids id,unsigned char *data, unsigned int len);
+	bool writetime(component_ids id,unsigned char *data, unsigned int len);
+	bool writeduration(component_ids id,unsigned char *data, unsigned int len);
 public:
 	virtual bool init(void) {
 		filewriter();
@@ -30,12 +30,14 @@ public:
 	void setoutput(FILE *f) {output=f;};
 
 	virtual void doindent();
-	virtual writer *ProcessData(char *message);
-	virtual writer *write(char *message);
-	virtual writer *write(component_ids id,unsigned int val);
-	virtual writer *write(component_ids id);
-	virtual writer *bindata(component_ids id,unsigned char *data, unsigned int len);
-	virtual writer *chardata(component_ids id,char *data, unsigned int len);
+	virtual writer *child(void);
+	virtual bool ProcessData(char *message);
+	virtual bool write(char *message);
+	virtual bool write(component_ids id,unsigned int val);
+	virtual bool write(component_ids id);
+	virtual bool bindata(component_ids id,unsigned char *data, unsigned int len);
+	virtual bool chardata(component_ids id,char *data, unsigned int len);
+	virtual void enditem(void);
 };
 
 #endif // !defined(WRITER_H__INCLUDED_)

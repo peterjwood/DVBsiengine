@@ -9,7 +9,8 @@ bool PMT::Write(writer* parent)
 	writer *level;
 	unsigned short tmpshort;
 
-	level = parent->write(IDS_PMT);
+	level = parent->child();
+	parent->write(IDS_PMT);
 
 	WriteGeneric(level);
 
@@ -23,6 +24,7 @@ bool PMT::Write(writer* parent)
 	ProgramInfoLoop(level);
 
 	StreamLoop(level);
+	parent->removechild(level);
 
 	return true;
 }
@@ -40,14 +42,19 @@ void PMT::ProgramInfoLoop(writer *parent)
 	if(!get12bits(looplen))
 		return;
 
-	level = parent->write(IDS_PROGINF);
+	parent->write(IDS_PROGINF,looplen);
 
+	parent->startlist(IDS_PROGINF);
 	while (looplen)
 	{
+		level = parent->child();
+		parent->listitem();
 		unsigned short size = DecodeDescriptor(level,looplen);
 		looplen -= size;
 		finddata(false,size);
+		parent->removechild(level);
 	}
+	parent->endlist();
 }
 
 bool PMT::StreamLoop(writer *parent)
@@ -56,10 +63,13 @@ bool PMT::StreamLoop(writer *parent)
 	unsigned short looplen,ushort_data;
 	unsigned char uchar_data;
 
-	level = parent->write(IDS_PROGSTR);
+	parent->write(IDS_PROGSTR);
 
+	parent->startlist(IDS_PROGSTR);
 	while(currentpos < SectionPayloadLength())
 	{
+		level = parent->child();
+		parent->listitem();
 		if(!getbyte(uchar_data))
 			return false;
 		level->write(IDS_STRTYPE,uchar_data);
@@ -71,17 +81,24 @@ bool PMT::StreamLoop(writer *parent)
 		if(!get12bits(looplen))
 			return false;
 
-		level2 = level->write(IDS_ESINF);
+		level->write(IDS_ESINF);
 
+		level->startlist(IDS_DESCRIPTORS);
 		while (looplen)
 		{
+			level->listitem();
+			level2 = level->child();
 			unsigned short size = DecodeDescriptor(level2,looplen);
 			looplen -= size;
 			if (!size)
 				return false;
 			finddata(false,size);
+			level->removechild(level2);
 		}
+		level->endlist();
+		parent->removechild(level);
 	}
+	parent->endlist();
 
 	return true;
 }

@@ -244,11 +244,13 @@ bool SIdescriptor::decode(writer *level)
 {
 	writer *desclevel;
 
-	desclevel = level->write(IDS_UKNDESC, DescriptorType());
+	level->write(IDS_UKNDESC, DescriptorType());
+	desclevel = level->child();
 
 	desclevel->write(IDS_LENGTH, DescriptorLength());
 	desclevel->bindata(IDS_DATA,&descriptordata[2],DescriptorLength());
 
+	level->removechild(desclevel);
 	return true;
 }
 

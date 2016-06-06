@@ -14,7 +14,8 @@ bool PES::Write(writer* parent)
 	unsigned short seclen;
 	bool extPresent = false;
 
-	level = parent->write(IDS_PES, PID());
+	parent->write(IDS_PES, PID());
+	level = parent->child();
 
 	seclen = SectionLength();
 
@@ -191,6 +192,7 @@ bool PES::Write(writer* parent)
 
 	finddata(true,0);
 	writeblock(IDS_PESDATA,seclen,level);
+	parent->removechild(level);
 
 	return true;
 }

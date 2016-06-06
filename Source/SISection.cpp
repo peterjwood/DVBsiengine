@@ -318,7 +318,9 @@ bool SISection::WriteGeneric(writer *parent)
 bool SISection::Write(writer *level)
 {
 
-	writer *level1 = level->write(IDS_UNTABTYPE,sectiondata[0]);
+	writer *level1 = level->child();
+
+	level->write(IDS_UNTABTYPE,sectiondata[0]);
 
 	// go to the start of the buffer
 	finddata(true, 0);
@@ -331,6 +333,7 @@ bool SISection::Write(writer *level)
 	// dump everything
 	writeblock(IDS_DATA,SectionLength(),level1);
 
+	level->removechild(level1);
 	return true;
 }
 

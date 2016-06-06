@@ -2,41 +2,13 @@
 #include <signal.h>
 #include <string.h>
 #include <unistd.h>
-#include "filewriter.h"
+#include "jsonwriter.h"
 #include "SITable.h"
 #include "Packet.h"
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
 #include "generaltools.h"
-
-class filterwriter : public filewriter
-{
-private:
-	component_ids lastid;
-public:
-	virtual writer *write(char *message){return this;};
-	virtual writer *write(component_ids id,unsigned int val){
-		if (id == IDS_MODID)
-			filewriter::write(id,val);
-		if (lastid == IDS_MODID)
-		{
-			//get the len next and then the version
-			filewriter::write(id,val);
-			if (id == IDS_SIZE) // expect the MODID then the len then the version
-				return this;
-		}
-		lastid = id;
-		return this;
-	};
-	virtual writer *write(component_ids id){return this;};
-	virtual writer *bindata(component_ids id,unsigned char *data, unsigned int len){return this;};
-	virtual writer *chardata(component_ids id,char *data, unsigned int len){return this;};
-
-	
-	filterwriter(){lastid = IDS_UNKNOWN;};
-	~filterwriter(){};
-};
 
 class TableList
 {
@@ -406,7 +378,7 @@ int PacketLoadingTask()
 	unsigned long bufferpos = 0;
 	unsigned long pnum = 0;
 	int i;
-	filewriter w;
+	jsonwriter w;
 	writer* level1;
 	int f=-1;
 	FILE *outfile=NULL;
@@ -426,7 +398,11 @@ int PacketLoadingTask()
 			w.setoutput(outfile);
 	}
 
-	basepacketsize = 188;
+	amountread = read(f,basebuffer,512);
+
+	basepacketsize = amountread >= 188 ? getpacketsize(basebuffer,&basestartpos):188;
+
+	if (basestartpos) lseek(f,basestartpos,0);
 
 	if (basepacketsize == 0xFFFF)
 	{
@@ -435,7 +411,8 @@ int PacketLoadingTask()
 		return -2;
 	}
 
-	level1 = w.write("Tables");
+	//w.write("Tables");
+	level1 = w.child();
 	
 	while (gettingpids > -1)
 	{
@@ -448,7 +425,7 @@ int PacketLoadingTask()
 		count[i] = 0L;
 	}
 
-	while (!g_abort)
+	//while (!g_abort)
 	{
 	while (!g_abort && ((amountread = read(f,&basebuffer[bufferpos],(PACKETBUFFERSIZE/basepacketsize)*basepacketsize))>basepacketsize))
 	{
@@ -558,6 +535,7 @@ int PacketLoadingTask()
 
 	}
 exitpoint:
+	w.removechild(level1);
 	if (dostats)
 	{
 		unsigned long totalpackets = 0L;
@@ -567,7 +545,8 @@ exitpoint:
 			totalpackets += count[i];
 		}
 
-		level1 = w.write("PIDs");
+		w.write("PIDs");
+		level1 = w.child();
 		for (i = 0; i <8192; i++)
 		{
 			char buffer[256];
@@ -578,8 +557,10 @@ exitpoint:
 
 				sprintf(buffer, "0x%.4X - number of packets %lu - rate %1.8f bps",i,count[i],rate);
 				level1->write(buffer);
+				level1->enditem();
 			}
 		}
+		w.removechild(level1);
 	}
 
 	close(f);
@@ -612,7 +593,7 @@ int SectionLoadingTask()
 	unsigned long bufferpos = 0;
 	SISection *CurrentSect = NULL;
 
-	filewriter w;
+	jsonwriter w;
 	writer* level1;
 	int f=-1;
 	FILE *outfile=NULL;
@@ -647,7 +628,8 @@ int SectionLoadingTask()
 	basepacketsize = 4096;
 
 
-	level1 = w.write("Tables");
+	w.write("Tables");
+	level1 = w.child();
 
 	lseek(f,basestartpos,0);
 
@@ -678,6 +660,7 @@ int SectionLoadingTask()
 		TList->clean(true);
 		delete TList;
 	}
+	w.removechild(level1);
 
 	return 0;
 }

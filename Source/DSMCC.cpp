@@ -89,11 +89,14 @@ bool UNSessionMessage::Write(writer *level)
 
 bool DownloadMessage::WritePrivData(int len, writer *level)
 {
-	writer *level1 = level->write(IDS_PDLEN, len);
+	writer *level1 = level->child();
+
+	level->write(IDS_PDLEN, len);
 
 	if (len)
 		writeblock(IDS_PRIVDAT,len,level1);
 
+	level->removechild(level1);
 	return true;
 }
 
@@ -114,7 +117,8 @@ bool DIRequest::Write(writer *level)
 	if (!WriteHeader(level))
 		return false;
 
-	level2 = level->write(IDS_DIREQUEST);
+	level2 = level->child();
+	level->write(IDS_DIREQUEST);
 
 	if (!getulong(ulong_data))
 		return false;
@@ -135,6 +139,7 @@ bool DIRequest::Write(writer *level)
 
 	writeblock(IDS_PRIVDAT,len,level2);
 
+	level->removechild(level2);
 	return true;
 }
 
@@ -165,7 +170,8 @@ bool DII::Write(writer *level)
 		return false;
 
 
-	level2 = level->write(IDS_DII);
+	level2 = level->child();
+	level->write(IDS_DII);
 
 	if (!getulong(ulong_data))
 		return false;
@@ -205,7 +211,8 @@ bool DII::Write(writer *level)
 		if(!getushort(Module))
 			return false;
 
-		level3 = level2->write(IDS_MODID, Module);
+		level3 = level2->child();
+		level2->write(IDS_MODID, Module);
 
 		if (!getulong(ulong_data))
 			return false;
@@ -220,6 +227,7 @@ bool DII::Write(writer *level)
 
 		if (!WriteModInfo(inflen,level3))
 			return false;
+		level2->removechild(level3);
 
 	}
 
@@ -228,6 +236,7 @@ bool DII::Write(writer *level)
 	if (!WritePrivData(ushort_data,level2))
 		return false;
 
+	level->removechild(level2);
 
 	return true;
 }
@@ -248,7 +257,8 @@ bool DDB::Write(writer *level)
 	if (!WriteHeader(level))
 		return false;
 
-	level2 = level->write(IDS_DDB);
+	level2 = level->child();
+	level->write(IDS_DDB);
 
 	if(!getushort(ushort_data))
 		return false;
@@ -267,6 +277,7 @@ bool DDB::Write(writer *level)
 
 	writeblock(IDS_DATA,SectionPayloadLength() - currentpos,level2);
 
+	level->removechild(level2);
 	return true;
 }
 
@@ -285,7 +296,8 @@ bool DDRequest::Write(writer *level)
 	if (!WriteHeader(level))
 		return false;
 
-	level2 = level->write(IDS_DDREQMESS);
+	level2 = level->child();
+	level->write(IDS_DDREQMESS);
 	if (!getushort(ushort_data))
 		return false;
 	level2->write(IDS_NUMMOD, ushort_data);
@@ -298,6 +310,7 @@ bool DDRequest::Write(writer *level)
 		return false;
 	level2->write(IDS_REASON, uchar_data);
 
+	level->removechild(level2);
 	return true;
 }
 bool DLCancel::Write(writer *level)
@@ -316,7 +329,8 @@ bool DLCancel::Write(writer *level)
 	if (!WriteHeader(level))
 		return false;
 
-	level2 = level->write(IDS_DLCANCEL);
+	level2 = level->child();
+	level->write(IDS_DLCANCEL);
 
 	if (!getulong(ulong_data))
 		return false;
@@ -344,6 +358,7 @@ bool DLCancel::Write(writer *level)
 			return false;
 	}
 
+	level->removechild(level2);
 	return true;
 }
 
@@ -362,7 +377,8 @@ bool DSI::Write(writer *level)
 	if (!WriteHeader(level))
 		return false;
 
-	level2 = level->write(IDS_DSI);
+	level2 = level->child();
+	level->write(IDS_DSI);
 
 	writeblock(IDS_SERVID,20,level2);
 
@@ -373,6 +389,7 @@ bool DSI::Write(writer *level)
 
 	if (!WritePrivData(pdlen,level2))
 		return false;
+	level->removechild(level2);
 	return true;
 }
 
@@ -394,7 +411,8 @@ bool DownloadMessage::CompSubDesc(writer *level)
 	if (!getbyte(type))
 		return false;
 			
-	level1 = level->write(IDS_SUBDESCTYPE, type);
+	level1 = level->child();
+	level->write(IDS_SUBDESCTYPE, type);
 			
 	if(!getbyte(len))
 		return false;
@@ -404,6 +422,7 @@ bool DownloadMessage::CompSubDesc(writer *level)
 	if (len)
 		writeblock(IDS_SUBDESCTYPE,len,level1);
 
+	level->removechild(level1);
 	return true;
 }
 
@@ -422,7 +441,8 @@ void DownloadMessage::compatibilitydesc(writer *level)
 	if (len == 0) // no compatibility descriptor so bye bye
 		return;
 
-	level2 = level->write(IDS_COMPATDESC);
+	level2 = level->child();
+	level->write(IDS_COMPATDESC);
 
 	level2->write(IDS_LENGTH, len);
 
@@ -435,7 +455,8 @@ void DownloadMessage::compatibilitydesc(writer *level)
 	{
 		if (!getbyte(uchar_data))
 			return;
-		level3 = level2->write(IDS_DESCTYPE, uchar_data);
+		level3 = level2->child();
+		level2->write(IDS_DESCTYPE, uchar_data);
 
 		if (!getbyte(uchar_data))
 			return;
@@ -466,8 +487,10 @@ void DownloadMessage::compatibilitydesc(writer *level)
 				return;
 
 		}
+		level2->removechild(level3);
 	}
 
+	level->removechild(level2);
 }
 bool DSMCC::WriteGeneric(writer *parent)
 {
@@ -523,13 +546,15 @@ bool DSMCC::WriteHeader(writer *level)
 	{
 		writer *adaptlevel;
 
-		adaptlevel = level->write(IDS_ADAPT);
+		adaptlevel = level->child();
+		level->write(IDS_ADAPT);
 			
 		if(!getbyte(uchar_data))
 			return false;
 		adaptlevel->write(IDS_TYPE, uchar_data);
 
 		writeblock(IDS_ADAPT,adaptlen,adaptlevel);
+		level->removechild(adaptlevel);
 	}
 	return true;
 }
@@ -538,7 +563,8 @@ bool DSMCC::Write(writer *level)
 {
 	writer *level2;
 
-	level2 = level->write(IDS_DSMCCTAB, TableType());
+	level2 = level->child();
+	level->write(IDS_DSMCCTAB, TableType());
 
 	WriteGeneric(level);
 
@@ -546,6 +572,7 @@ bool DSMCC::Write(writer *level)
 	if (!WriteHeader(level2))
 		return false;
 
+	level->removechild(level2);
 	return true;
 }
 

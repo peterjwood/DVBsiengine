@@ -9,7 +9,8 @@ bool SDT::Write(writer* parent)
 	writer *level;
 	unsigned short tmpshort;
 
-	level = parent->write(IDS_SDT);
+	level = parent->child();
+	parent->write(IDS_SDT);
 
 	if (TableType() == 0x42)
 		level->write(IDS_ACTUAL);
@@ -32,6 +33,9 @@ bool SDT::Write(writer* parent)
 
 	ServiceLoop(level);
 
+	level->enditem();
+
+	parent->removechild(level);
 	return true;
 }
 
@@ -47,25 +51,28 @@ bool SDT::ServiceLoop(writer* parent)
 	unsigned char tmp;
 	unsigned short looplen,tmpshort;
 
-	level = parent->write(IDS_SERVICES);
+	parent->write(IDS_SERVICES);
 
+	parent->startlist(IDS_SERVICES);
 	while(currentpos < SectionPayloadLength())
 	{
 
+		level = parent->child();
+		parent->listitem();
 		if(!getushort(tmpshort))
 			return false;
-		level2 = level->write(IDS_SERVICEID, tmpshort);
+		level->write(IDS_SERVICEID, tmpshort);
 
 		if(!getbyte(tmp))
 			return false;
 
 		if (tmp & 2)
 		{
-			level2->write( IDS_EITSCHDATA);
+			level->write( IDS_EITSCHDATA);
 		}
 		if (tmp & 1)
 		{
-			level2->write( IDS_EITPRESFOLL);
+			level->write( IDS_EITPRESFOLL);
 		}
 
 		if(!getbyte(tmp,false))
@@ -74,46 +81,53 @@ bool SDT::ServiceLoop(writer* parent)
 		switch ((tmp & 0xE0)>>5)
 		{
 		case 0:
-			level2->write(IDS_UNDEF);
+			level->write(IDS_UNDEF);
 			break;
 		case 1:
-			level2->write(IDS_NOTRUN);
+			level->write(IDS_NOTRUN);
 			break;
 		case 2:
-			level2->write(IDS_SOON);
+			level->write(IDS_SOON);
 			break;
 		case 3:
-			level2->write(IDS_PAUSING);
+			level->write(IDS_PAUSING);
 			break;
 		case 4:
-			level2->write(IDS_RUN);
+			level->write(IDS_RUN);
 			break;
 		default:
-			level2->write(IDS_RESERR);
+			level->write(IDS_RESERR);
 			break;
 		}
 
 		if (tmp & 0x10)
 		{
-			level2->write(IDS_CAACT);
+			level->write(IDS_CAACT);
 		}
 		else
 		{
-			level2->write(IDS_CANACT);
+			level->write(IDS_CANACT);
 		}
 
 		if(!get12bits(looplen))
 			return false;
 
+		level->startlist(IDS_DESCRIPTORS);
 		while (looplen)
 		{
+			level2 = level->child();
+			level->listitem();
 			unsigned short size = DecodeDescriptor(level2,looplen);
 			if (!size)
 				return false;
 			looplen -= size;
 			finddata(false,size);
+			level->removechild(level2);
 		}
+		level->endlist();
+		parent->removechild(level);
 	}
+	parent->endlist();
 
 	return true;
 }
