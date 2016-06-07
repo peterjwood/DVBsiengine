@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <string.h>
+#include <time.h>
 #include <signal.h>
 #include <unistd.h>
 #include "filewriter.h"
@@ -166,6 +167,7 @@ static int PacketLoadingTask();
 char filename[1024];
 char outfilename[1024];
 bool ExcludeDup = false; 
+int duration=-1;
 
 bool multistartpacket=false;
 
@@ -182,7 +184,7 @@ int main (int argc, char *argv[] )
 	filename[0] = 0;
 	outfilename[0] = 0;
 
-	while ((option = getopt(argc,argv,"f:xo:m")) != -1)
+	while ((option = getopt(argc,argv,"f:xo:md:")) != -1)
 	{
 		switch (option)
 		{
@@ -192,6 +194,10 @@ int main (int argc, char *argv[] )
 		case 'f':
 			strncpy(filename,optarg,1024);
 			printf("Filename = %s\n",filename);
+		break;
+		case 'd':
+			duration = strtol(optarg,NULL,0);
+			printf ("durarion = %d\n",duration);
 		break;
 		case 'x':
 			ExcludeDup = true;
@@ -296,6 +302,7 @@ int PacketLoadingTask()
 	writer* level1;
 	int f=-1;
 	FILE *outfile=NULL;
+	time_t start_time, time_now;
 
 	// initialise the local structures
 
@@ -321,6 +328,9 @@ int PacketLoadingTask()
 	Sect = NULL;
 	cont = 0xFF;
 
+	if (duration != -1)
+		time(&start_time);
+		
 	while (!g_abort)
 	{
 	while (!g_abort && ((amountread = read(f,&basebuffer[bufferpos],(PACKETBUFFERSIZE/basepacketsize)*basepacketsize))>basepacketsize))
@@ -395,6 +405,14 @@ int PacketLoadingTask()
 		}
 		bufferpos = 0;
 		p.initialise();
+		if (duration != -1)
+		{
+			time(&time_now);
+			if (duration < (int)difftime(time_now,start_time))
+			{
+				g_abort = true;
+			}
+		}
 	}
 	if (!g_abort) usleep(50000);
 	}

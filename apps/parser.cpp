@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <signal.h>
 #include <string.h>
+#include <time.h>
 #include <unistd.h>
 #include "jsonwriter.h"
 #include "SITable.h"
@@ -135,6 +136,7 @@ float BitRate = 27000000.0;
 int gettingpids = 0;
 bool TableSet = false;
 bool printallsects= false;
+int duration=-1;
 
 bool multistartpacket=false;
 
@@ -169,7 +171,7 @@ int main (int argc, char *argv[] )
 	filename[0] = 0;
 	outfilename[0] = 0;
 
-	while ((option = getopt(argc,argv,"f:p:xPt:b:o:msT:ASF")) != -1)
+	while ((option = getopt(argc,argv,"f:p:xPt:b:o:msT:ASFd:")) != -1)
 	{
 		switch (option)
 		{
@@ -186,6 +188,10 @@ int main (int argc, char *argv[] )
 			for (int i=0; i<8192; i++)
 				activePIDS[i] = true;
 		}
+		break;
+		case 'd':
+			duration = strtol(optarg,NULL,0);
+			printf ("durarion = %d\n",duration);
 		break;
 		case 'p':
 		{
@@ -386,6 +392,7 @@ int PacketLoadingTask()
 	writer* level1;
 	int f=-1;
 	FILE *outfile=NULL;
+	time_t start_time, time_now;
 
 	printf("Packetised file decode selected\n");
 	
@@ -402,11 +409,12 @@ int PacketLoadingTask()
 			w.setoutput(outfile);
 	}
 
-	amountread = read(f,basebuffer,512);
+	amountread = read(f,basebuffer,188*3);
 
 	basepacketsize = amountread >= 188 ? getpacketsize(basebuffer,&basestartpos):188;
 
-	if (basestartpos) lseek(f,basestartpos,0);
+printf("Basestartpos = %d\n", basestartpos);
+	if (basestartpos) read(f,basebuffer,basestartpos);
 
 	if (basepacketsize == 0xFFFF)
 	{
@@ -429,6 +437,9 @@ int PacketLoadingTask()
 		count[i] = 0L;
 	}
 
+	if (duration != -1)
+		time(&start_time);
+		
 	//while (!g_abort)
 	{
 	while (!g_abort && ((amountread = read(f,&basebuffer[bufferpos],(PACKETBUFFERSIZE/basepacketsize)*basepacketsize))>basepacketsize))
@@ -516,6 +527,15 @@ int PacketLoadingTask()
 		bufferpos = leftover;
 
 		p.initialise();
+	
+		if (duration != -1)
+		{
+			time(&time_now);
+			if (duration < (int)difftime(time_now,start_time))
+			{
+				g_abort = true;
+			}
+		}
 	}
 	if (!g_abort) usleep(50000);
 	}
