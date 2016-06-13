@@ -293,9 +293,10 @@ unsigned int count[8192];
 unsigned char basebuffer[PACKETBUFFERSIZE];
 TableList *TList=NULL;
 
-int ProcessSection(RawSection *Sect,writer *level, writer *parent)
+int ProcessSection(RawSection *Sect, writer *parent)
 {
 	SITable *TMPTable=NULL;
+	writer *level;
 
 	if ( Sect != NULL )
 	{
@@ -306,8 +307,10 @@ int ProcessSection(RawSection *Sect,writer *level, writer *parent)
                             RawSection *tmpsect = SISection::Allocate(Sect);
                             if ((tmpsect != NULL) && (level != NULL))
                             {
+				level=parent->child();
 				parent->listitem();
                                 tmpsect->Write(level);
+				parent->removechild(level);
                                 delete tmpsect;
                             }
                             return -1;
@@ -340,12 +343,14 @@ int ProcessSection(RawSection *Sect,writer *level, writer *parent)
 			{
 				if (TMPTable->complete())
 				{
-					if (level != NULL)
+					if (gettingpids != 1)
 					{
 						if (activeTables[TMPTable->TableType()])
 						{
+							level=parent->child();
 							parent->listitem();
 							TMPTable->Write(level);
+							parent->removechild(level);
 						}
 					}
 					else
@@ -355,7 +360,7 @@ int ProcessSection(RawSection *Sect,writer *level, writer *parent)
 							return 1;
 						}
 					}
-					if ((!ExcludeDup) && (level != NULL)) // Don't do this when we are gathering pid info
+					if ((!ExcludeDup) && (gettingpids != 1)) // Don't do this when we are gathering pid info
 					{
 						TableList *TempTlist = TList->Remove(TMPTable);
 						if (TempTlist == TList)
@@ -424,7 +429,6 @@ printf("Basestartpos = %d\n", basestartpos);
 	}
 
 	w.startlist("Tables");
-	level1 = w.child();
 	
 	while (gettingpids > -1)
 	{
@@ -501,7 +505,7 @@ printf("Basestartpos = %d\n", basestartpos);
 					if (Sect[p.pid()]->complete() == 1)
 					{
 						int processval;
-						if ((processval = ProcessSection(Sect[p.pid()],gettingpids?NULL:level1, &w)) == 1)
+						if ((processval = ProcessSection(Sect[p.pid()], &w)) == 1)
 						{
 							//goto exitpoint;
 							//lseek(f,basestartpos,0);
@@ -559,7 +563,6 @@ printf("Basestartpos = %d\n", basestartpos);
 
 	}
 exitpoint:
-	w.removechild(level1);
 	w.endlist();
 	w.enditem();
 	if (dostats)
@@ -572,22 +575,21 @@ exitpoint:
 		}
 
 		w.startlist("PIDs");
-		level1 = w.child();
 		for (i = 0; i <8192; i++)
 		{
 			char buffer[256];
 			float rate;
 			if (PidsUsed[i])
 			{
+				level1 = w.child();
 				w.listitem();
 				rate = ((float)count[i] / (float)totalpackets) * (float)BitRate;
 
 				sprintf(buffer, "0x%.4X - number of packets %lu - rate %1.8f bps",i,count[i],rate);
 				level1->write(buffer);
-				level1->enditem();
+				w.removechild(level1);
 			}
 		}
-		w.removechild(level1);
 		w.endlist();
 		w.enditem();
 	}
@@ -628,6 +630,7 @@ int SectionLoadingTask()
 	FILE *outfile=NULL;
 
 	printf("Section file decode selected\n");
+	gettingpids = 0;
 	// initialise the local structures
 	f = open(filename,O_RDONLY|O_LARGEFILE);
 
@@ -671,7 +674,7 @@ int SectionLoadingTask()
 
 			if ( CurrentSect->complete())
 			{
-				ProcessSection(CurrentSect,level1,&w);
+				ProcessSection(CurrentSect,&w);
 
 				delete CurrentSect;
 				CurrentSect = NULL;

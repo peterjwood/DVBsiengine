@@ -226,9 +226,10 @@ unsigned char cont;
 unsigned char basebuffer[PACKETBUFFERSIZE];
 TableList *TList=NULL;
 
-int ProcessSection(RawSection *Sect,writer *level, writer *parent)
+int ProcessSection(RawSection *Sect, writer *parent)
 {
 	SITable *TMPTable=NULL;
+	writer *level;
 
 	if ( Sect != NULL )
 	{
@@ -262,9 +263,11 @@ int ProcessSection(RawSection *Sect,writer *level, writer *parent)
 			{
 				if (TMPTable->complete())
 				{
+					level = parent->child();
 					parent->listitem();
 					TMPTable->Write(level);
 
+					parent->removechild(level);
 					if (!ExcludeDup)
 					{
 						TableList *TempTlist = TList->Remove(TMPTable);
@@ -299,31 +302,34 @@ int PacketLoadingTask()
 	unsigned long pnum = 0;
 	int i;
 	jsonwriter w;
-	writer* level1;
 	int f=-1;
 	FILE *outfile=NULL;
 	time_t start_time, time_now;
+	bool checksize = false;
 
 	// initialise the local structures
 
-	mkfifo(filename,0666);
-	f = open(filename,O_RDONLY);
+	f = open(filename,O_RDONLY|O_NONBLOCK);
 
 	if (f == -1)
+	{
+		printf("Failed to open input file\n");
 		return -1;
+	}
 
 	if (outfilename[0] != 0)
 	{
 		outfile = fopen(outfilename,"w+");
 		if (outfile)
 			w.setoutput(outfile);
+		else
+			printf("Failed to open outfile\n");
 	}
 
 	basepacketsize = 188;
 
 	
 	w.startlist("Tables");
-	level1 = w.child();
 	
 	Sect = NULL;
 	cont = 0xFF;
@@ -336,8 +342,19 @@ int PacketLoadingTask()
 	while (!g_abort && ((amountread = read(f,&basebuffer[bufferpos],(PACKETBUFFERSIZE/basepacketsize)*basepacketsize))>basepacketsize))
 	{
 		packet p; // define here so that it gets reset when we read from the file
-		if (amountread < 0)
+		if (amountread <= 0)
+		{
+			bufferpos = 0;
+			checksize = true;
+			if (!g_abort) usleep(50000);
 			continue;
+		}
+		if (checksize)
+		{
+			getpacketsize(basebuffer,&basestartpos);
+			bufferpos+=basestartpos;
+		}
+			
 		leftover = amountread % basepacketsize;
 
 		while(bufferpos <= amountread-basepacketsize)
@@ -345,7 +362,8 @@ int PacketLoadingTask()
 			if (!p.getnext(basepacketsize,&basebuffer[bufferpos],pnum++))
 			{
 				bufferpos += basepacketsize;
-				continue;
+				checksize = true;
+				break;
 			}
 			bufferpos += basepacketsize;
 
@@ -382,7 +400,7 @@ int PacketLoadingTask()
 					if (Sect->complete() == 1)
 					{
 						int processval;
-						if ((processval = ProcessSection(Sect,level1,&w)) == 1)
+						if ((processval = ProcessSection(Sect,&w)) == 1)
 						{
 							goto exitpoint;
 							//lseek(f,basestartpos,0);
@@ -403,8 +421,10 @@ int PacketLoadingTask()
 				}
 			}
 		}
-		bufferpos = 0;
-		p.initialise();
+		if (leftover)
+			memcpy(basebuffer,&basebuffer[bufferpos],leftover);
+		bufferpos = leftover;
+
 		if (duration != -1)
 		{
 			time(&time_now);
@@ -430,11 +450,10 @@ int PacketLoadingTask()
 	}	
 
 exitpoint:
-	w.removechild(level1);
+	printf("Exiting.....\n");
 	w.endlist();
 	w.enditem();
 	close(f);
-	unlink(filename);
 	if (outfile)
 		fclose(outfile);
 
