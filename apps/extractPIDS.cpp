@@ -18,6 +18,7 @@ char outfilename[1024];
 
 int of[8192];
 int loopcount =1;
+bool activePIDS[8192];
 
 volatile sig_atomic_t g_abort           = false;
 
@@ -40,18 +41,33 @@ int main (int argc, char *argv[] )
 	int option;
 	bool packetdecode = false;
 
-  signal(SIGSEGV, sig_handler);
-  signal(SIGABRT, sig_handler);
-  signal(SIGFPE, sig_handler);
-  signal(SIGINT, sig_handler);
+  	signal(SIGSEGV, sig_handler);
+  	signal(SIGABRT, sig_handler);
+  	signal(SIGFPE, sig_handler);
+  	signal(SIGINT, sig_handler);
+	memset(activePIDS,0,sizeof(activePIDS));
 
 	filename[0] = 0;
 	outfilename[0] = 0;
 
-	while ((option = getopt(argc,argv,"f:o:l:")) != -1)
+	while ((option = getopt(argc,argv,"p:f:o:l:")) != -1)
 	{
 		switch (option)
 		{
+		case 'p':
+		{
+			int pid = strtol(optarg,NULL,0);
+			printf ("Adding pid 0x%X\n",pid);
+			printf ("arg was %s\n",optarg);
+			if (pid < 8192)
+			{
+				activePIDS[pid] = true;
+			}
+			else
+				printf("Invalid value\n");
+		}	
+		break;
+
 		case 'l':
 			loopcount = strtol(optarg,NULL,0);
 			printf ("Loop %d times through file\n",loopcount);
@@ -132,7 +148,7 @@ int PacketLoadingTask()
 				continue;
 			}
 			bufferpos += basepacketsize;
-			if (of[p.pid()] == -1)
+			if (activePIDS[p.pid()] && of[p.pid()] == -1)
 			{
 				if (outfilename[0] != 0)
 					sprintf(outname, "%s.0x%X", outfilename,p.pid());
