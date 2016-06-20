@@ -152,16 +152,21 @@ bool SITable::current()
 
 bool SITable::Write(writer* level)
 {
-
+	writer *level1;
 	int i;
 
+	level->startlist(IDS_SECTION);
 	for (i = 0; i < MAX_SECTIONS; i++)
 	{
-
 		if (SectionList[i] != NULL)
-			SectionList[i]->Write(level);
+		{
+			level1 = level->child();
+			level->listitem();
+			SectionList[i]->Write(level1);
+			level->removechild(level1);
+		}
 	}
-
+	level->endlist();
 	return true;
 }
 

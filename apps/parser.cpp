@@ -289,7 +289,7 @@ bool PidsUsed[8192];
 RawSection *Sect[8192];
 unsigned char cont[8192];
 unsigned int count[8192];
-#define PACKETBUFFERSIZE 1024*1024
+#define PACKETBUFFERSIZE 16*1024*1024
 unsigned char basebuffer[PACKETBUFFERSIZE];
 TableList *TList=NULL;
 
@@ -444,20 +444,22 @@ printf("Basestartpos = %d\n", basestartpos);
 	if (duration != -1)
 		time(&start_time);
 		
-	//while (!g_abort)
+	while (!g_abort)
 	{
-	while (!g_abort && ((amountread = read(f,&basebuffer[bufferpos],(PACKETBUFFERSIZE/basepacketsize)*basepacketsize))>basepacketsize))
+	while (!g_abort && ((amountread = read(f,&basebuffer[bufferpos],((PACKETBUFFERSIZE-bufferpos)/basepacketsize)*basepacketsize))>basepacketsize))
 	{
 		packet p; // define here so that it gets reset when we read from the file
 		if (amountread < 0)
 			continue;
 		leftover = amountread % basepacketsize;
+		bufferpos = 0;
 
 		while(bufferpos <= amountread-basepacketsize)
 		{
 			if (!p.getnext(basepacketsize,&basebuffer[bufferpos],pnum++))
 			{
 				bufferpos += basepacketsize;
+				printf("error loading packet\n");
 				continue;
 			}
 			bufferpos += basepacketsize;
@@ -474,8 +476,11 @@ printf("Basestartpos = %d\n", basestartpos);
 
 			if ((p.cont == cont[p.pid()])  || !p.datacontent())
 			{
+				printf("cont same? %d, %d or no data in packet\n",p.cont,cont[p.pid()]);
 				continue;
 			}
+			if (p.cont != (cont[p.pid()]+1) %16)
+				printf("cont skipped %d, %d\n",p.cont,cont[p.pid()]);
 
 			cont[p.pid()] = p.cont;
 

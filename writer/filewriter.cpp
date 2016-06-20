@@ -480,6 +480,7 @@ const char * cSIStringTable[IDS_MAX_STRING]=
 /*    IDS_ASSOCIATIONTAGDESC  */   "Association Tag Descriptor",
 /*    IDS_DEFASSTAGDESC       */   "Deferred Association Tag Descriptor",
 /*    IDS_DESCRIPTORS         */   "Descriptors",
+/*    IDS_SECTION             */   "Sections",
 };
 
 

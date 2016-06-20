@@ -171,8 +171,12 @@ unsigned char* packet::payload()
 
 bool packet::decode_data()
 {
-	if ((data[0] == 0x47) || (data[0] == 0xB8))
+	if ((data[0] == 0x47) || (data[0] == 0xb8))
 	{
+		// demod uncorrectable error
+		if (TransportError())
+			return false;
+
 		if (adaptation() && (data[4] > 183))
 		{
 			//invalid adaptation len

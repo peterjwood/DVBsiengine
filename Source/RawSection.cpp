@@ -108,10 +108,6 @@ bool RawSection::getulong(unsigned long& data, bool inc)
 }
 unsigned char *RawSection::getrawdata(unsigned long length, bool inc)
 {
-	// if the section is not complete what are we doing here?
-	if (!complete()) 
-		return NULL;
-
 	// is the offset in the section?
 	if (currentpos < SectionPayloadLength() )
 	{
@@ -140,8 +136,7 @@ unsigned char *RawSection::getrawdata(unsigned long length, bool inc)
 }
 bool RawSection::getdata(unsigned long length, unsigned char *buffer, bool inc)
 {
-	// if the section is not complete what are we doing here?
-	if ((!complete()) || (buffer == NULL) )
+	if (buffer == NULL)
 		return false;
 
 	// is the offset in the section?
