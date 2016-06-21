@@ -1177,8 +1177,7 @@ public:
 	{
 		writer *desclevel;  //Logical channel number descriptor
 		short i;
-		level->writetitle(IDS_LCNDESC);
-		level->startlist(IDS_LCNS);
+		level->startlist(IDS_LCNDESC);
 		for (i = 2; i < DescriptorLength(); i+=4)
 		{
 			int servid;
