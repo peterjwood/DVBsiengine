@@ -1164,6 +1164,40 @@ public:
 };
 
 
+class LCNdesc : public SIdescriptor
+{
+public:
+	LCNdesc(unsigned char *data = NULL):SIdescriptor(data){};
+	virtual ~LCNdesc(){};
+	static SIdescriptor* allocate(unsigned char *data)
+	{
+		return (SIdescriptor*) new LCNdesc(data);
+	}
+	bool decode(writer* level)
+	{
+		writer *desclevel;  //Logical channel number descriptor
+		short i;
+		level->writetitle(IDS_LCNDESC);
+		level->startlist(IDS_LCNS);
+		for (i = 2; i < DescriptorLength(); i+=4)
+		{
+			int servid;
+			desclevel = level->child();
+			level->listitem();
+			servid = (descriptordata[i]<<8)+descriptordata[i+1];
+			desclevel->write(IDS_SERVICEID, servid);
+			if (descriptordata[i+2]&0x80)
+				desclevel->write(IDS_VISIBLE, IDS_TRUE);
+			else
+				desclevel->write(IDS_VISIBLE, IDS_FALSE);
+			desclevel->write(IDS_LCN,((descriptordata[i+2]&3)<<8)+descriptordata[i+3]);
+			level->removechild(desclevel);
+		}
+		level->endlist();
+		return true;
+	};
+};
+
 class FSTunneldesc : public SIdescriptor
 {
 public:
@@ -1198,7 +1232,6 @@ public:
 		return true;
 	};
 };
-
 
 class FSAltTunneldesc : public SIdescriptor
 {

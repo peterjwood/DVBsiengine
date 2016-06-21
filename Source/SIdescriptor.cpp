@@ -203,6 +203,10 @@ void SIdescriptor::initialise_allocators(void)
 		allocators[i] = &DataBroadIDdesc::allocate;
 	break;
 
+	case 0x83:  // LCN descriptor
+		allocators[i] = &LCNdesc::allocate;
+	break;
+
 	case 0xD0:  //free_satellite_tunnelled_data_descriptor
 		allocators[i] = &FSTunneldesc::allocate;
 	break;

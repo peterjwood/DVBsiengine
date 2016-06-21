@@ -472,6 +472,11 @@ static const char * cSIJSONStringTable[IDS_MAX_STRING]=
 /*    _IDS_DEFASSTAGDESC        _*/    "Deferred_Association_Tag_Descriptor",
 /*    _IDS_DESCRIPTORS            */    "Descriptors",
 /*    IDS_SECTION            */    "Sections",
+/*    IDS_LCNDESC                     */"LCNDesc",
+/*    IDS_LCNS                     */"LCNs",
+/*    IDS_VISIBLE                     */"Visible",
+/*    IDS_LCN                     */"LCN",
+
 };
 
 
