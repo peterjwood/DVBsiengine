@@ -565,9 +565,9 @@ bool filewriter::writetime(component_ids id,unsigned char *data, unsigned int le
 		unsigned short tmp,year,month,day;
 
 		tmp = (data[0]<<8) + data[1];
-		year = (tmp - 15078) / 365;
-		month = ( tmp - 14956 - (year * 365) )/ 30;
-		day = tmp - 14956 - (year * 365) - (month * 30 );
+		year = (unsigned short)((tmp - 15078.2) / 365.25);
+		month = (unsigned short)(( (tmp - 14956.1 - (unsigned short)(year * 365.25)) )/ 30.6001);
+		day = tmp - 14956 - (unsigned short)(year * 365.25) - (unsigned short)(month * 30.6001 );
 
 		if ((month == 14) || (month == 15))
 			tmp = 1;

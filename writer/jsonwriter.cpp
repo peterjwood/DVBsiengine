@@ -179,9 +179,9 @@ bool jsonwriter::writetime(component_ids id,unsigned char *data, unsigned int le
 		unsigned short tmp,year,month,day;
 
 		tmp = (data[0]<<8) + data[1];
-		year = (tmp - 15078) / 365;
-		month = ( tmp - 14956 - (year * 365) )/ 30;
-		day = tmp - 14956 - (year * 365) - (month * 30 );
+		year = (unsigned short)((tmp - 15078.2) / 365.25);
+		month = (unsigned short)(( (tmp - 14956.1 - (unsigned short)(year * 365.25)) )/ 30.6001);
+		day = tmp - 14956 - (unsigned short)(year * 365.25) - (unsigned short)(month * 30.6001 );
 
 		if ((month == 14) || (month == 15))
 			tmp = 1;
@@ -190,7 +190,7 @@ bool jsonwriter::writetime(component_ids id,unsigned char *data, unsigned int le
 
 		year += tmp + 1900;
 		month = month - 1 - (12 * tmp);
-		sprintf(writebuffer,"\"%s\":\"%X:%.2X:%.2X %d/%d/%d\"",cSIJSONStringTable[id],data[2],data[3],data[4],day,month,year);
+		sprintf(writebuffer,"\"%s\":\"%X:%.2X:%.2X %.2d/%.2d/%d\"",cSIJSONStringTable[id],data[2],data[3],data[4],day,month,year);
 	}
 	return ProcessData(writebuffer);
 }
@@ -233,17 +233,23 @@ bool jsonwriter::chardata(component_ids id,char *data, unsigned int len)
 {
 	unsigned int pos;
 
-	sprintf(writebuffer,"\"%s\":\"",cSIJSONStringTable[id]);
 
-	for (pos=0;pos < len; pos++)
+	if (data[0] == 0x1f)
 	{
-		if (data[pos] > 0x1f) 
+				sprintf(writebuffer,"\"%s\":\"Huffman encoded string",cSIJSONStringTable[id]);
+	}
+	else
+	{
+		sprintf(writebuffer,"\"%s\":\"",cSIJSONStringTable[id]);
+		for (pos=0;pos < len; pos++)
 		{
-			sprintf(writebuffer,"%s%c",writebuffer,data[pos]);
+			if (data[pos] > 0x1f) 
+			{
+				sprintf(writebuffer,"%s%c",writebuffer,data[pos]);
+			}
+			else
+				strcat(writebuffer,".");
 		}
-		else
-			strcat(writebuffer,".");
-
 	}
 	strcat(writebuffer,"\"");
 	return ProcessData(writebuffer);
