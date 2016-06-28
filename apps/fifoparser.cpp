@@ -309,7 +309,7 @@ int PacketLoadingTask()
 
 	// initialise the local structures
 
-	mkfifo(filename,0666);
+	//mkfifo(filename,0666);
 	f = open(filename,O_RDONLY|O_NONBLOCK);
 
 	if (f == -1)
@@ -455,7 +455,7 @@ exitpoint:
 	w.endlist();
 	w.enditem();
 	close(f);
-	unlink(filename);
+	//unlink(filename);
 	if (outfile)
 		fclose(outfile);
 

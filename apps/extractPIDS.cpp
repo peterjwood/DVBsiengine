@@ -5,6 +5,7 @@
 #include "Packet.h"
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <unistd.h>
 #include <fcntl.h>
 #include <errno.h>
 #include <signal.h>
@@ -34,17 +35,29 @@ void sig_handler(int s)
   signal(SIGSEGV, SIG_DFL);
   signal(SIGFPE, SIG_DFL);
 }
+void sig_pipe(int s)
+{
+	for (int i =0; i< 8192; i++)
+		if (of[i] != -1) 
+		{
+			close(of[i]);
+			of[i]=-1;
+		}
+}
+
 
 
 int main (int argc, char *argv[] )
 {
 	int option;
 	bool packetdecode = false;
+	bool setpid=false;
 
   	signal(SIGSEGV, sig_handler);
   	signal(SIGABRT, sig_handler);
   	signal(SIGFPE, sig_handler);
   	signal(SIGINT, sig_handler);
+	signal(SIGPIPE,sig_pipe);
 	memset(activePIDS,0,sizeof(activePIDS));
 
 	filename[0] = 0;
@@ -61,6 +74,7 @@ int main (int argc, char *argv[] )
 			printf ("arg was %s\n",optarg);
 			if (pid < 8192)
 			{
+				setpid = true;
 				activePIDS[pid] = true;
 			}
 			else
@@ -86,6 +100,7 @@ int main (int argc, char *argv[] )
 		}
 	}
 
+	if (!setpid) memset(activePIDS,1,sizeof(activePIDS));
 	if (filename[0] != 0)
 	{
 		return PacketLoadingTask();
@@ -93,7 +108,7 @@ int main (int argc, char *argv[] )
 	return 1;
 }
 
-#define PACKETBUFFERSIZE 1024*1024
+#define PACKETBUFFERSIZE 188*1024
 unsigned char basebuffer[PACKETBUFFERSIZE];
 char outname[1024];
 int PacketLoadingTask()
@@ -104,8 +119,10 @@ int PacketLoadingTask()
 	unsigned long pnum = 0;
 	int i;
 	int f=-1;
+	struct timeval timer ;
+	fd_set fileset;
+	int ret;
 
-	signal(SIGPIPE,SIG_IGN);
 
 	// initialise the local structures
 	f = open(filename,O_RDONLY|O_LARGEFILE);
@@ -138,41 +155,81 @@ int PacketLoadingTask()
 		packet p; // define here so that it gets reset when we read from the file
 		if (amountread < 0)
 			continue;
-		leftover = amountread % basepacketsize;
+
+		if (activePIDS[0x1fff] && of[0x1fff] == -1)
+		{
+			if (outfilename[0] != 0)
+				sprintf(outname, "%s.0x%X", outfilename,0x1fff);
+			else
+				sprintf(outname, "%s.0x%X", filename,0x1fff);
+
+
+				of[0x1fff] = open(outname,O_RDWR);
+		}
+		if (of[0x1fff] != -1)
+		{
+			FD_ZERO(&fileset);
+			timer.tv_sec = 0;
+			timer.tv_usec=1;
+			FD_SET(of[0x1fff], &fileset);
+			ret = select(FD_SETSIZE,NULL, &fileset, NULL,&timer);
+			if(ret>0)
+			{
+				if (FD_ISSET(of[0x1fff],&fileset))
+					if(write(of[0x1fff],&basebuffer[bufferpos],amountread) != amountread)
+					{
+						close(of[0x1fff]);
+						of[0x1fff] = -1;
+					}
+			}
+		}
+
+		leftover = (amountread+bufferpos) % basepacketsize;
 
 		while(!g_abort && (bufferpos <= amountread-basepacketsize))
 		{
+			unsigned short pid;
 			if (!p.getnext(basepacketsize,&basebuffer[bufferpos],pnum++))
 			{
 				bufferpos += basepacketsize;
 				continue;
 			}
 			bufferpos += basepacketsize;
-			if (activePIDS[p.pid()] && of[p.pid()] == -1)
+
+			pid = p.pid();
+			if ((pid == 0x1fff) || !activePIDS[pid])
+				continue;
+
+			if (activePIDS[pid] && of[pid] == -1)
 			{
 				if (outfilename[0] != 0)
-					sprintf(outname, "%s.0x%X", outfilename,p.pid());
+					sprintf(outname, "%s.0x%X", outfilename,pid);
 				else
-					sprintf(outname, "%s.0x%X", filename,p.pid());
+					sprintf(outname, "%s.0x%X", filename,pid);
 
 
-					of[p.pid()] = open(outname,O_WRONLY);
+					of[pid] = open(outname,O_RDWR);
 			}
-			if (of[0x1fff] != -1)
+
+			FD_ZERO(&fileset);
+			timer.tv_sec = 0;
+			timer.tv_usec=1;
+
+			if ((pid!=0x1fff)&&(of[pid] != -1))
 			{
-				if(write(of[0x1fff],(unsigned char*)p,basepacketsize) != basepacketsize)
-				{
-					close(of[0x1fff]);
-					of[0x1fff] = -1;
-				}
+				FD_SET(of[pid], &fileset);
 			}
-			if ((p.pid()!=0x1fff) && (of[p.pid()] != -1))
+
+			ret = select(FD_SETSIZE,NULL, &fileset, NULL,&timer);
+
+			if(ret>0)
 			{
-				if(write(of[p.pid()],(unsigned char*)p,basepacketsize) != basepacketsize)
-				{
-					close(of[p.pid()]);
-					of[p.pid()] = -1;
-				}
+				if (FD_ISSET(of[pid],&fileset))
+					if(write(of[pid],(unsigned char*)p,basepacketsize) != basepacketsize)
+					{
+						close(of[pid]);
+						of[pid] = -1;
+					}
 			}
 
 		}
