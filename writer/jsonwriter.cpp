@@ -43,8 +43,8 @@ bool jsonwriter::ProcessData(char* message)
 {	
 	int i;
 
-	for (i = 0; (i < indent); i++)
-		fprintf(output,"\t");
+	//for (i = 0; (i < indent); i++)
+		//fprintf(output,"\t");
 
 	if (firstitem)
 	{
@@ -60,7 +60,8 @@ bool jsonwriter::ProcessData(char* message)
 	else
 		fprintf(output, ",%s",message);
 	
-	fprintf(output,"\n");
+	//fprintf(output,"\n");
+	fflush(output);
 	return true;
 }
 void jsonwriter::startlist(component_ids id)
@@ -85,21 +86,34 @@ void jsonwriter::startlist(char *listname)
 
 void jsonwriter::listitem()
 {
-	if (listcount)
+	//if (listcount)
+	//{
+		//for (int i = 0; (i < indent); i++)
+			//fprintf(output,"\t");
+		//fprintf(output,",\n");
+	//}
+	if (invisible && listcount>0) 
 	{
-		for (int i = 0; (i < indent); i++)
-			fprintf(output,"\t");
-		fprintf(output,",\n");
+		fprintf(output,"\n");
+		fflush(output);
 	}
+	else if (listcount > 0)
+	{
+		fprintf(output,",");
+		fflush(output);
+	}
+
 	writer::listitem();
 }
 
 void jsonwriter::endlist()
 {
-	for (int i = 0; (i < indent); i++)
-		fprintf(output,"\t");
+	//for (int i = 0; (i < indent); i++)
+		//fprintf(output,"\t");
 
-	fprintf(output, "]\n");
+	fprintf(output, "]");
+	//fprintf(output, "\n");
+	fflush(output);
 
 	writer::endlist();
 }

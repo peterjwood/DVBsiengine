@@ -156,7 +156,7 @@ int PacketLoadingTask()
 		if (amountread < 0)
 			continue;
 
-		if (activePIDS[0x1fff] && of[0x1fff] == -1)
+		if (activePIDS[0x1fff] && (of[0x1fff] == -1))
 		{
 			if (outfilename[0] != 0)
 				sprintf(outname, "%s.0x%X", outfilename,0x1fff);
@@ -164,7 +164,10 @@ int PacketLoadingTask()
 				sprintf(outname, "%s.0x%X", filename,0x1fff);
 
 
-				of[0x1fff] = open(outname,O_RDWR);
+				of[0x1fff] = open(outname,O_WRONLY|O_NONBLOCK);
+				if (of[0x1fff]!= -1)
+					fcntl(of[0x1fff],F_SETFL,O_WRONLY);
+					
 		}
 		if (of[0x1fff] != -1)
 		{
@@ -208,7 +211,9 @@ int PacketLoadingTask()
 					sprintf(outname, "%s.0x%X", filename,pid);
 
 
-					of[pid] = open(outname,O_RDWR);
+					of[pid] = open(outname,O_WRONLY|O_NONBLOCK);
+					if (of[pid]!= -1)
+						fcntl(of[pid],F_SETFL,O_WRONLY);
 			}
 
 			FD_ZERO(&fileset);

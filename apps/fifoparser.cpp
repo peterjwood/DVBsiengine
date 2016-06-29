@@ -330,7 +330,8 @@ int PacketLoadingTask()
 	basepacketsize = 188;
 
 	
-	w.startlist("Tables");
+	//w.startlist("Tables");
+	w.startinvisiblelist();
 	
 	Sect = NULL;
 	cont = 0xFF;
@@ -452,8 +453,8 @@ int PacketLoadingTask()
 
 exitpoint:
 	printf("Exiting.....\n");
-	w.endlist();
-	w.enditem();
+	w.endinvisiblelist();
+	//w.enditem();
 	close(f);
 	//unlink(filename);
 	if (outfile)

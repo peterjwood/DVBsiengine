@@ -15,6 +15,7 @@ public:
 	writer()
 	{
 		inlist=false;
+		invisible=false;
 		listcount = 0;
 	};
 	virtual ~writer(){};
@@ -30,14 +31,17 @@ public:
     virtual bool write(component_ids id,component_ids id2){if (write(id)) return write(id2); return false;};
     virtual bool bindata(component_ids id,unsigned char *data, unsigned int len)=0;
     virtual bool chardata(component_ids id,char *data, unsigned int len)=0;
+    virtual void startinvisiblelist(void){invisible=true;inlist=true;listcount = 0;};
     virtual void startlist(component_ids id){inlist=true;listcount = 0;};
     virtual void startlist(char *listname){inlist=true;listcount = 0;};
     virtual void listitem(void){listcount++;};
     virtual void endlist(void){inlist=false;};
+    virtual void endinvisiblelist(void){inlist=false;invisible=false;};
     virtual void enditem(void)=0;
 
     int listcount;
     bool inlist;
+    bool invisible;
 };
 
 #endif // !defined(WRITER_H__INCLUDED_)
