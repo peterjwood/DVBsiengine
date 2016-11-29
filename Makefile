@@ -25,3 +25,5 @@ clean:
 	make -C DSMCC clean
 	make -C DSMCCsection clean
 
+install:
+	make -C apps install
