@@ -20,6 +20,7 @@ char outfilename[1024];
 int of[8192];
 int loopcount =1;
 bool activePIDS[8192];
+unsigned char cont[8192];
 
 volatile sig_atomic_t g_abort           = false;
 
@@ -143,14 +144,14 @@ int PacketLoadingTask()
 	for (i = 0; i <8192; i++)
 	{
 		of[i] = -1;
-		
+		cont[i] = 0xFF;
 	}
 
 	
 	bufferpos = 0;
 	while (!g_abort)
 	{
-	while (!g_abort && ((amountread = read(f,&basebuffer[bufferpos],(PACKETBUFFERSIZE/basepacketsize)*basepacketsize))>basepacketsize))
+	while (!g_abort && ((amountread = read(f,&basebuffer[bufferpos],(PACKETBUFFERSIZE/basepacketsize)*basepacketsize))>=basepacketsize))
 	{
 		packet p; // define here so that it gets reset when we read from the file
 		if (amountread < 0)
@@ -203,6 +204,10 @@ int PacketLoadingTask()
 			if ((pid == 0x1fff) || !activePIDS[pid])
 				continue;
 
+			if (p.cont != (cont[pid]+1) %16)
+				printf("cont skipped %d, %d\n",p.cont,cont[pid]);
+			cont[pid]=p.cont;
+
 			if (activePIDS[pid] && of[pid] == -1)
 			{
 				if (outfilename[0] != 0)
@@ -230,13 +235,15 @@ int PacketLoadingTask()
 			if(ret>0)
 			{
 				if (FD_ISSET(of[pid],&fileset))
+				{
 					if(write(of[pid],(unsigned char*)p,basepacketsize) != basepacketsize)
 					{
+						printf("Failed to write so closing %X\n",pid);
 						close(of[pid]);
 						of[pid] = -1;
 					}
+				}
 			}
-
 		}
 		if (leftover)
 			memcpy(basebuffer,&basebuffer[bufferpos],leftover);

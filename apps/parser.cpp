@@ -164,6 +164,7 @@ int main (int argc, char *argv[] )
   signal(SIGABRT, sig_handler);
   signal(SIGFPE, sig_handler);
   signal(SIGINT, sig_handler);
+  signal(SIGPIPE, SIG_IGN);
 
 
 	memset(activePIDS,0,sizeof(activePIDS));
@@ -416,7 +417,7 @@ int PacketLoadingTask()
 
 	amountread = read(f,basebuffer,188*3);
 
-	basepacketsize = amountread >= 188 ? getpacketsize(basebuffer,&basestartpos):188;
+	basepacketsize = amountread > 188 ? getpacketsize(basebuffer,&basestartpos):188;
 
 printf("Basestartpos = %d\n", basestartpos);
 	if (basestartpos) read(f,basebuffer,basestartpos);
@@ -446,7 +447,7 @@ printf("Basestartpos = %d\n", basestartpos);
 		
 	while (!g_abort)
 	{
-	while (!g_abort && ((amountread = read(f,&basebuffer[bufferpos],((PACKETBUFFERSIZE-bufferpos)/basepacketsize)*basepacketsize))>basepacketsize))
+	while (!g_abort && ((amountread = read(f,&basebuffer[bufferpos],((PACKETBUFFERSIZE-bufferpos)/basepacketsize)*basepacketsize))>=basepacketsize))
 	{
 		packet p; // define here so that it gets reset when we read from the file
 		if (amountread < 0)
