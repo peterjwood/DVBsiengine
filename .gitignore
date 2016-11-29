@@ -13,3 +13,11 @@ apps/DSMCCprocess
 apps/fifoparser
 apps/sectionFilter
 tags
+apps/bin/
+debian/files
+debian/siengine-doc.debhelper.log
+debian/siengine-doc.substvars
+debian/siengine-doc/
+debian/siengine.debhelper.log
+debian/siengine.substvars
+debian/siengine/
