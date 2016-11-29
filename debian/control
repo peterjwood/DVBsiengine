@@ -1,0 +1,19 @@
+Source: siengine
+Section: unknown
+Priority: optional
+Maintainer: Peter Wood <peter@petealexdaniel.co.uk>
+Build-Depends: debhelper (>= 9)
+Standards-Version: 3.9.5
+Homepage: 
+#Vcs-Git: git://anonscm.debian.org/collab-maint/siengine.git
+#Vcs-Browser: http://anonscm.debian.org/?p=collab-maint/siengine.git;a=summary
+
+Package: siengine
+Architecture: any
+Depends: ${shlibs:Depends}, ${misc:Depends}
+Description: DVB SI Parsing tools
+
+Package: siengine-doc
+Architecture: all
+Description: documentation for siengine
+
