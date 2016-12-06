@@ -1,4 +1,5 @@
 BINPATH?=bin/
+PKGNAME:=DVB
 INCPATH=-I../Source -I../writer -I../DSMCC -I../DSMCCsection
 LIBPATH=-Wl,-L../Source -Wl,-L../writer -Wl,-L../DSMCC -Wl,-L../DSMCCsection
 LIBS=-Wl,-lz -Wl,-lsidecode -Wl,-lWriter -Wl,-lDSMCC -Wl,-lDSMCCparser
@@ -11,46 +12,46 @@ DESTDIR?=/
 %.o:%.cpp
 	g++ -g $(INCPATH) -c -MD $<
 
-all: $(BINPATH) $(BINPATH)fifoparser $(BINPATH)parser $(BINPATH)depacket $(BINPATH)extractPIDS $(BINPATH)extractDSMCC $(BINPATH)parseDSMCC $(BINPATH)decomp $(BINPATH)parseDSMCCOC $(BINPATH)sectionFilter $(BINPATH)DSMCCprocess
+all: $(BINPATH) $(BINPATH)$(PKGNAME)fifoparser $(BINPATH)$(PKGNAME)parser $(BINPATH)$(PKGNAME)depacket $(BINPATH)$(PKGNAME)extractPIDS $(BINPATH)$(PKGNAME)extractDSMCC $(BINPATH)$(PKGNAME)parseDSMCC $(BINPATH)$(PKGNAME)decomp $(BINPATH)$(PKGNAME)parseDSMCCOC $(BINPATH)$(PKGNAME)sectionFilter $(BINPATH)$(PKGNAME)DSMCCprocess
 
 $(BINPATH):
 	mkdir -p $(BINPATH)
 
 OBJECTS=$(patsubst %.cpp,%.o, $(SOURCES))
 
-$(BINPATH)parser: parser.o $(LIBDEPS)
+$(BINPATH)$(PKGNAME)parser: parser.o $(LIBDEPS)
 	g++ -o $@ $< $(LIBS) $(LIBPATH)
 
-$(BINPATH)fifoparser: fifoparser.o $(LIBDEPS)
+$(BINPATH)$(PKGNAME)fifoparser: fifoparser.o $(LIBDEPS)
 	g++ -o $@ $< $(LIBS) $(LIBPATH)
 
-$(BINPATH)decomp: decomp.o $(LIBDEPS)
+$(BINPATH)$(PKGNAME)decomp: decomp.o $(LIBDEPS)
 	g++ -o $@ $< $(LIBS) $(LIBPATH)
 
-$(BINPATH)depacket: depacket.o $(LIBDEPS)
+$(BINPATH)$(PKGNAME)depacket: depacket.o $(LIBDEPS)
 	g++ -o $@ $< $(LIBS)  $(LIBPATH)
 
-$(BINPATH)extractPIDS: extractPIDS.o $(LIBDEPS)
+$(BINPATH)$(PKGNAME)extractPIDS: extractPIDS.o $(LIBDEPS)
 	g++ -o $@ $< $(LIBS)  $(LIBPATH)
 
-$(BINPATH)extractDSMCC: extractDSMCC.o $(LIBDEPS)
+$(BINPATH)$(PKGNAME)extractDSMCC: extractDSMCC.o $(LIBDEPS)
 	g++ -o $@ $< $(LIBS) $(LIBPATH)
 
-$(BINPATH)parseDSMCC: parseDSMCC.o $(LIBDEPS)
+$(BINPATH)$(PKGNAME)parseDSMCC: parseDSMCC.o $(LIBDEPS)
 	g++ -o $@ $< $(LIBS)  $(LIBPATH)
 
-$(BINPATH)parseDSMCCOC: parseDSMCCOC.o $(LIBDEPS)
+$(BINPATH)$(PKGNAME)parseDSMCCOC: parseDSMCCOC.o $(LIBDEPS)
 	g++ -o $@ $< $(LIBS)  $(LIBPATH)
 
-$(BINPATH)DSMCCprocess: DSMCCprocess.o $(LIBDEPS)
+$(BINPATH)$(PKGNAME)DSMCCprocess: DSMCCprocess.o $(LIBDEPS)
 	g++ -o $@ $< $(LIBS)  $(LIBPATH)
 
-$(BINPATH)sectionFilter: sectionFilter.o $(LIBDEPS)
+$(BINPATH)$(PKGNAME)sectionFilter: sectionFilter.o $(LIBDEPS)
 	g++ -o $@ $< $(LIBS)  $(LIBPATH)
 
 
 clean:
-	rm -f *.o *.d  $(BINPATH)fifoparser $(BINPATH)parser $(BINPATH)depacket $(BINPATH)extractPIDS $(BINPATH)extractDSMCC $(BINPATH)parseDSMCC $(BINPATH)decomp $(BINPATH)parseDSMCCOC $(BINPATH)DSMCCprocess $(BINPATH)sectionFilter 
+	rm -f *.o *.d  $(BINPATH)$(PKGNAME)fifoparser $(BINPATH)$(PKGNAME)parser $(BINPATH)$(PKGNAME)depacket $(BINPATH)$(PKGNAME)extractPIDS $(BINPATH)$(PKGNAME)extractDSMCC $(BINPATH)$(PKGNAME)parseDSMCC $(BINPATH)$(PKGNAME)decomp $(BINPATH)$(PKGNAME)parseDSMCCOC $(BINPATH)$(PKGNAME)DSMCCprocess $(BINPATH)$(PKGNAME)sectionFilter 
 	if [ -d $(BINPATH) ]; then rmdir -p --ignore-fail-on-non-empty $(BINPATH); fi
 
 install:

@@ -30,6 +30,6 @@ install:
 
 PAK_VER?=1.0
 debian-package:
-	rm -f ../siengine_1.0.orig.tar.xz
-	tar --exclude-vcs --exclude=debian -cJf ../siengine_1.0.orig.tar.xz .
+	rm -f ../siengine_$(PAK_VER).orig.tar.xz
+	tar --exclude-vcs --exclude=debian -cJf ../siengine_$(PAK_VER).orig.tar.xz .
 	debuild -us -uc
